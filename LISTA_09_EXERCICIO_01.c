@@ -17,6 +17,7 @@ char *input;
 int token;
 char last_token[5];
 int error_flag;
+int first_print = 1;
 
 int getToken() {
     while (*input == ' ') 
@@ -99,7 +100,10 @@ void eat(int t) {
         advance();
     else{
         if (last_token[0] == '\0') {
-            printf("ERRO SINTATICO: CADEIA INCOMPLETA\n");
+            if(!first_print)
+                printf("\n");
+            first_print = 0;
+            printf("ERRO SINTATICO: CADEIA INCOMPLETA");
             error_flag = 1;
             return;
         }
@@ -142,8 +146,11 @@ void eat(int t) {
             break;
         }
 
+        if(!first_print)
+                printf("\n");
+            first_print = 0;
 
-        printf("ERRO SINTATICO EM: %s ESPERADO: %s\n", last_token, expected);
+        printf("ERRO SINTATICO EM: %s ESPERADO: %s", last_token, expected);
         error_flag = 1;
     }
 }
@@ -164,7 +171,11 @@ void L() {
             break;
 
         default:
-            printf("ERRO SINTATICO EM: %s ESPERADO: end, ;\n", last_token);
+            if(!first_print)
+                printf("\n");
+            first_print = 0;
+
+            printf("ERRO SINTATICO EM: %s ESPERADO: end, ;", last_token);
             error_flag = 1;
     }
 }
@@ -204,7 +215,11 @@ void S() {
             break;
 
         default:
-            printf("ERRO SINTATICO EM: %s ESPERADO: if, begin, print\n", last_token);
+            if(!first_print)
+                printf("\n");
+            first_print = 0;
+
+            printf("ERRO SINTATICO EM: %s ESPERADO: if, begin, print", last_token);
             error_flag = 1;
     }
 }
@@ -219,8 +234,13 @@ int main() {
         error_flag = 0;
         advance();  // Inicializa o primeiro token
         S();        // Inicia a análise sintática
-        if (error_flag != 1) 
-            printf("CADEIA ACEITA\n");
+        if (error_flag != 1){
+            if(!first_print)
+                printf("\n");
+            first_print = 0;
+
+            printf("CADEIA ACEITA");
+        }
     }
     
     return 0;
