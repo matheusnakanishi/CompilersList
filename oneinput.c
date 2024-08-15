@@ -16,7 +16,6 @@
 char *input;
 int token;
 char last_token[5];
-int error_flag;
 
 int getToken() {
     while (*input == ' ') 
@@ -73,9 +72,11 @@ int getToken() {
 
     // Verifica se é um número
     if (isdigit(*input) || ((*input == '+' || *input == '-') && isdigit(*(input + 1)))) {
+        char *start = input;
         input++;
         while (isdigit(*input)) input++;
-        strcpy(last_token,"num\0");
+        strncpy(last_token, start, input - start);
+        last_token[input - start] = '\0'; 
         return NUM;
     }
 
@@ -91,17 +92,13 @@ void advance() {
 }
 
 void eat(int t) {
-    if(error_flag == 1)
-        return;
-    
     char *expected;
     if (token == t)
         advance();
     else{
         if (last_token[0] == '\0') {
-            printf("ERRO SINTATICO: CADEIA INCOMPLETA\n");
-            error_flag = 1;
-            return;
+            printf("ERRO SINTATICO: CADEIA INCOMPLETA");
+            exit(1);
         }
         
         switch (t) {
@@ -142,16 +139,12 @@ void eat(int t) {
             break;
         }
 
-
-        printf("ERRO SINTATICO EM: %s ESPERADO: %s\n", last_token, expected);
-        error_flag = 1;
+        printf("ERRO SINTATICO EM: %s ESPERADO: %s", last_token, expected);
+        exit(1);
     }
 }
 
 void L() {
-    if(error_flag == 1)
-        return;
-
     switch (token) {
         case END:
             eat(END);
@@ -164,24 +157,18 @@ void L() {
             break;
 
         default:
-            printf("ERRO SINTATICO EM: %s ESPERADO: end, ;\n", last_token);
-            error_flag = 1;
+            printf("ERRO SINTATICO EM: %s ESPERADO: end, =", last_token);
+            exit(1);
     }
 }
 
 void E() {
-    if(error_flag == 1)
-        return;
-
     eat(NUM);
     eat(EQ);
     eat(NUM);
 }
 
 void S() {
-    if(error_flag == 1)
-        return;
-
     switch (token) {
         case IF:
             eat(IF);
@@ -204,23 +191,22 @@ void S() {
             break;
 
         default:
-            printf("ERRO SINTATICO EM: %s ESPERADO: if, begin, print\n", last_token);
-            error_flag = 1;
+            printf("ERRO SINTATICO EM: %s ESPERADO: if, begin, print", last_token);
+            exit(1);
     }
 }
 
 
 
 int main() {
-    char buffer[60000];
+    char buffer[256];
     
-    while (fgets(buffer, sizeof(buffer), stdin)) {
+    if (fgets(buffer, sizeof(buffer), stdin)) {
         input = buffer;
-        error_flag = 0;
         advance();  // Inicializa o primeiro token
         S();        // Inicia a análise sintática
-        if (error_flag != 1) 
-            printf("CADEIA ACEITA\n");
+        if (token == -1) 
+            printf("CADEIA ACEITA");
     }
     
     return 0;
