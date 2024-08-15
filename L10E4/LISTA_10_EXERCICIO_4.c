@@ -20,31 +20,31 @@ int getToken() {
     while (*input == ' ') 
         input++; // Ignora espaços em branco
 
-    if (*input == "+") {
+    if (*input == '+') {
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
         input++;
         return PLUS;
     }
-    if (*input == "*") {
+    if (*input == '*') {
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
         input++;
         return AST;
     }
-    if (*input == "(") {
+    if (*input == '(') {
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
         input++;
         return L_PAREN;
     }
-    if (*input == ")") {
+    if (*input == ')') {
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
         input++;
         return R_PAREN;
     }
-    if (*input == "$") {
+    if (*input == '$') {
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
         input++;
@@ -53,11 +53,11 @@ int getToken() {
     
     // Verifica se é um id
     if (isalpha(*input)) {
-        input++
+        input++;
         while(isalnum(*input))
-            input++
+            input++;
         strcpy(last_token, "id");
-        last_token[2] = "\0";
+        last_token[2] = '\0';
         return ID;
     }
 
@@ -67,6 +67,9 @@ int getToken() {
     else {
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
+        if(!first_print)
+                printf("\n");
+            first_print = 0;
         printf("ERRO LEXICO: %s", last_token);
         error_flag = 1;
     }
@@ -78,7 +81,7 @@ void advance() {
     token = getToken();
 }
 
-void eat(int t, char state) {
+void eat(int t) {
     if(error_flag == 1)
         return;
     
@@ -138,7 +141,10 @@ void F() {
             break;
 
         default:
-            printf("ERRO SINTATICO EM: %s ESPERADO: (, id", last_token);
+            if (!first_print)
+                printf("\n");
+            first_print = 0;
+            printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
             error_flag = 1;
             break;
     }
@@ -147,18 +153,40 @@ void F() {
 void TL() {
     if(error_flag == 1)
         return;
-
-    eat(AST);
-    F();
-    TL();
+    
+    if (token == AST) {
+        eat(AST);
+        F();
+        TL();
+    }
+    else {
+        if (token != PLUS && token != R_PAREN && token != END) {
+            if (!first_print)
+                printf("\n");
+            first_print = 0;
+            printf("ERRO SINTATICO EM: %s ESPERADO: +, *, ), $", last_token);
+            error_flag = 1;
+        }
+    }
+    
 }
 
 void T() {
     if(error_flag == 1)
         return;
 
-    F();
-    TL();
+    if (token == ID || token == L_PAREN) {
+        F();
+        TL();
+    }
+    else {
+        if (!first_print)
+            printf("\n");
+        first_print = 0;
+        printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
+        error_flag = 1;
+    }
+    
 }
 
 void EL() {
@@ -170,34 +198,63 @@ void EL() {
         T();
         EL();
     }
+    else {
+        if (token != R_PAREN && token != END) {
+            if (!first_print)
+                printf("\n");
+            first_print = 0;
+            printf("ERRO SINTATICO EM: %s ESPERADO: +, ), $", last_token);
+            error_flag = 1;
+        }
+    }
 
 }
 
 void E() {
     if(error_flag == 1)
         return;
-
-    T();
-    EL();
+    
+    if (token == ID || token == L_PAREN) {
+        T();
+        EL();
+    }
+    else {
+        if (!first_print)
+            printf("\n");
+        first_print = 0;
+        printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
+        error_flag = 1;
+    }
 }
 
 void S() {
     if(error_flag == 1)
         return;
 
-    E();
-    eat(END);
+    if (token == ID || token == L_PAREN) {
+        E();
+        eat(END);
+    }
+    else {
+        if (!first_print)
+            printf("\n");
+        first_print = 0;
+        printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
+        error_flag = 1;
+    }
+    
 }
 
 
 
 int main() {
-    char buffer[60000];
+    char buffer[131072];
     
     while (fgets(buffer, sizeof(buffer), stdin)) {
         input = buffer;
         error_flag = 0;
         advance();  // Inicializa o primeiro token
+
         S();        // Inicia a análise sintática
         if (error_flag != 1){
             if(!first_print)
