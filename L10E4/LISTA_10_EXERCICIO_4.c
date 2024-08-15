@@ -119,8 +119,10 @@ void eat(int t) {
         if(!first_print)
                 printf("\n");
             first_print = 0;
-
-        printf("ERRO SINTATICO EM: %s ESPERADO: %s", last_token, expected);
+        if(last_token[0] == '\0')
+            printf("ERRO SINTATICO EM: ESPERADO: %s", expected);
+        else
+            printf("ERRO SINTATICO EM: %s ESPERADO: %s", last_token, expected);
         error_flag = 1;
     }
 }
@@ -144,7 +146,11 @@ void F() {
             if (!first_print)
                 printf("\n");
             first_print = 0;
-            printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
+
+            if(last_token[0] == '\0')
+                printf("ERRO SINTATICO EM: ESPERADO: id, (");
+            else
+                printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
             error_flag = 1;
             break;
     }
@@ -164,7 +170,10 @@ void TL() {
             if (!first_print)
                 printf("\n");
             first_print = 0;
-            printf("ERRO SINTATICO EM: %s ESPERADO: +, *, ), $", last_token);
+            if(last_token[0] == '\0')
+                printf("ERRO SINTATICO EM: ESPERADO: +, *, ), $");
+            else
+                printf("ERRO SINTATICO EM: %s ESPERADO: +, *, ), $", last_token);
             error_flag = 1;
         }
     }
@@ -183,7 +192,10 @@ void T() {
         if (!first_print)
             printf("\n");
         first_print = 0;
-        printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
+        if(last_token[0] == '\0')
+            printf("ERRO SINTATICO EM: ESPERADO: id, (");
+        else
+            printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
         error_flag = 1;
     }
     
@@ -203,7 +215,10 @@ void EL() {
             if (!first_print)
                 printf("\n");
             first_print = 0;
-            printf("ERRO SINTATICO EM: %s ESPERADO: +, ), $", last_token);
+            if(last_token[0] == '\0')
+                printf("ERRO SINTATICO EM: ESPERADO: +, ), $");
+            else
+                printf("ERRO SINTATICO EM: %s ESPERADO: +, ), $", last_token);
             error_flag = 1;
         }
     }
@@ -222,6 +237,9 @@ void E() {
         if (!first_print)
             printf("\n");
         first_print = 0;
+        if(last_token[0] == '\0')
+            printf("ERRO SINTATICO EM: ESPERADO: id, (");
+        else
         printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
         error_flag = 1;
     }
@@ -239,7 +257,11 @@ void S() {
         if (!first_print)
             printf("\n");
         first_print = 0;
-        printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
+
+        if(last_token[0] == '\0')
+            printf("ERRO SINTATICO EM: ESPERADO: id, (");
+        else
+            printf("ERRO SINTATICO EM: %s ESPERADO: id, (", last_token);
         error_flag = 1;
     }
     
