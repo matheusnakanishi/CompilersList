@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+// Palavras reservadas
 #define ALGORITMO 1
 #define INICIO 2
 #define FIM 3
@@ -59,225 +60,265 @@
 
 char *input;
 int token;
-char last_token[5];
+char last_token[15];
 int error_flag;
 int first_print = 1;
-int row = 1;
-int col = 1;
+int row = 0;
+int col = 0;
+int block_comment = 0;
 
 int getToken() {
-    while (*input == ' ') 
-        input++; // Ignora espaços em branco
 
-    if (*input == '\t') {
-        input++;
-        col += 4;
+    // Continuação de comentário em bloco em outra linha
+    if (block_comment) {
+        while (*input != '}') {
+            if (*input == '\n')
+                return 0;
+            if (*input == '\0')
+                return -1; //comentário em bloco não finalizado
+            input++;
+            col++;
+        }
+
+        block_comment = 0;
+        return 0;
     }
 
-    if (strncmp(input, "algoritmo", 9) == 0 && !isalnum(input[9])) {
+    // Ignora espaços em branco
+    while (*input == ' ') {
+        input++; 
+        col++;
+    }
+
+    // Comentário de uma linha
+    if (strncmp(input, "//", 2) == 0) {
+        return 0;
+    }
+
+    // Comentário em bloco
+    if (*input == '{') {
+        block_comment = 1;
+        input++;
+        col++;
+
+        while (*input != '}') {
+            if (*input == '\n')
+                return 0;
+            if (*input == '\0')
+                return -1; //comentário em bloco não finalizado
+            input++;
+            col++;
+        }
+
+        block_comment = 0;
+        return 0;
+    }
+
+    // Palavras reservadas
+    if (strncasecmp(input, "algoritmo", 9) == 0 && !isalnum(input[9])) {
         strncpy(last_token, input, 9);
         last_token[9] = '\0';
         input += 9;
         col += 9;
         return ALGORITMO;
     }
-    if (strncmp(input, "inicio", 6) == 0 && !isalnum(input[6])) {
+    if (strncasecmp(input, "inicio", 6) == 0 && !isalnum(input[6])) {
         strncpy(last_token, input, 6);
         last_token[6] = '\0';
         input += 6;
         col += 6;
         return INICIO;
     }
-    if (strncmp(input, "fim", 3) == 0 && !isalnum(input[3])) {
+    if (strncasecmp(input, "fim", 3) == 0 && !isalnum(input[3])) {
         strncpy(last_token, input, 3);
         last_token[3] = '\0';
         input += 3;
         col += 3;
         return FIM;
     }
-    if (strncmp(input, "variaveis", 9) == 0 && !isalnum(input[9])) {
+    if (strncasecmp(input, "variaveis", 9) == 0 && !isalnum(input[9])) {
         strncpy(last_token, input, 9);
         last_token[9] = '\0';
         input += 9;
         col += 9;
         return VARIAVEIS;
     }
-    if (strncmp(input, "inteiro", 7) == 0 && !isalnum(input[7])) {
+    if (strncasecmp(input, "inteiro", 7) == 0 && !isalnum(input[7])) {
         strncpy(last_token, input, 7);
         last_token[7] = '\0';
         input += 7;
         col += 7;
         return INTEIRO;
     }
-    if (strncmp(input, "real", 4) == 0 && !isalnum(input[4])) {
+    if (strncasecmp(input, "real", 4) == 0 && !isalnum(input[4])) {
         strncpy(last_token, input, 4);
         last_token[4] = '\0';
         input += 4;
         col += 4;
         return REAL;
     }
-    if (strncmp(input, "caractere", 9) == 0 && !isalnum(input[9])) {
+    if (strncasecmp(input, "caractere", 9) == 0 && !isalnum(input[9])) {
         strncpy(last_token, input, 9);
         last_token[9] = '\0';
         input += 9;
         col += 9;
         return CARACTERE;
     }
-    if (strncmp(input, "logico", 6) == 0 && !isalnum(input[6])) {
+    if (strncasecmp(input, "logico", 6) == 0 && !isalnum(input[6])) {
         strncpy(last_token, input, 6);
         last_token[6] = '\0';
         input += 6;
         col += 6;
         return LOGICO;
     }
-    if (strncmp(input, "vetor", 5) == 0 && !isalnum(input[5])) {
+    if (strncasecmp(input, "vetor", 5) == 0 && !isalnum(input[5])) {
         strncpy(last_token, input, 5);
         last_token[5] = '\0';
         input += 5;
         col += 5;
         return VETOR;
     }
-    if (strncmp(input, "matriz", 6) == 0 && !isalnum(input[6])) {
+    if (strncasecmp(input, "matriz", 6) == 0 && !isalnum(input[6])) {
         strncpy(last_token, input, 6);
         last_token[6] = '\0';
         input += 6;
         col += 6;
         return MATRIZ;
     }
-    if (strncmp(input, "tipo", 4) == 0 && !isalnum(input[4])) {
+    if (strncasecmp(input, "tipo", 4) == 0 && !isalnum(input[4])) {
         strncpy(last_token, input, 4);
         last_token[4] = '\0';
         input += 4;
         col += 4;
         return TIPO;
     }
-    if (strncmp(input, "funcao", 6) == 0 && !isalnum(input[6])) {
+    if (strncasecmp(input, "funcao", 6) == 0 && !isalnum(input[6])) {
         strncpy(last_token, input, 6);
         last_token[6] = '\0';
         input += 6;
         col += 6;
         return FUNCAO;
     }
-    if (strncmp(input, "procedimento", 12) == 0 && !isalnum(input[12])) {
+    if (strncasecmp(input, "procedimento", 12) == 0 && !isalnum(input[12])) {
         strncpy(last_token, input, 12);
         last_token[12] = '\0';
         input += 12;
         col += 12;
         return PROCEDIMENTO;
     }
-    if (strncmp(input, "se", 2) == 0 && !isalnum(input[2])) {
+    if (strncasecmp(input, "se", 2) == 0 && !isalnum(input[2])) {
         strncpy(last_token, input, 2);
         last_token[2] = '\0';
         input += 2;
         col += 2;
         return SE;
     }
-    if (strncmp(input, "entao", 5) == 0 && !isalnum(input[5])) {
+    if (strncasecmp(input, "entao", 5) == 0 && !isalnum(input[5])) {
         strncpy(last_token, input, 5);
         last_token[5] = '\0';
         input += 5;
         col += 5;
         return ENTAO;
     }
-    if (strncmp(input, "senao", 5) == 0 && !isalnum(input[5])) {
+    if (strncasecmp(input, "senao", 5) == 0 && !isalnum(input[5])) {
         strncpy(last_token, input, 5);
         last_token[5] = '\0';
         input += 5;
         col += 5;
         return SENAO;
     }
-    if (strncmp(input, "enquanto", 8) == 0 && !isalnum(input[8])) {
+    if (strncasecmp(input, "enquanto", 8) == 0 && !isalnum(input[8])) {
         strncpy(last_token, input, 8);
         last_token[8] = '\0';
         input += 8;
         col += 8;
         return ENQUANTO;
     }
-    if (strncmp(input, "faca", 4) == 0 && !isalnum(input[4])) {
+    if (strncasecmp(input, "faca", 4) == 0 && !isalnum(input[4])) {
         strncpy(last_token, input, 4);
         last_token[4] = '\0';
         input += 4;
         col += 4;
         return FACA;
     }
-    if (strncmp(input, "para", 4) == 0 && !isalnum(input[4])) {
+    if (strncasecmp(input, "para", 4) == 0 && !isalnum(input[4])) {
         strncpy(last_token, input, 4);
         last_token[4] = '\0';
         input += 4;
         col += 4;
         return PARA;
     }
-    if (strncmp(input, "de", 2) == 0 && !isalnum(input[2])) {
+    if (strncasecmp(input, "de", 2) == 0 && !isalnum(input[2])) {
         strncpy(last_token, input, 2);
         last_token[2] = '\0';
         input += 2;
         col += 2;
         return DE;
     }
-    if (strncmp(input, "ate", 3) == 0 && !isalnum(input[3])) {
+    if (strncasecmp(input, "ate", 3) == 0 && !isalnum(input[3])) {
         strncpy(last_token, input, 3);
         last_token[3] = '\0';
         input += 3;
         col += 3;
         return ATE;
     }
-    if (strncmp(input, "passo", 5) == 0 && !isalnum(input[5])) {
+    if (strncasecmp(input, "passo", 5) == 0 && !isalnum(input[5])) {
         strncpy(last_token, input, 5);
         last_token[5] = '\0';
         input += 5;
         col += 5;
         return PASSO;
     }
-    if (strncmp(input, "leia", 4) == 0 && !isalnum(input[4])) {
+    if (strncasecmp(input, "leia", 4) == 0 && !isalnum(input[4])) {
         strncpy(last_token, input, 4);
         last_token[4] = '\0';
         input += 4;
         col += 4;
         return LEIA;
     }
-    if (strncmp(input, "imprima", 7) == 0 && !isalnum(input[7])) {
+    if (strncasecmp(input, "imprima", 7) == 0 && !isalnum(input[7])) {
         strncpy(last_token, input, 7);
         last_token[7] = '\0';
         input += 7;
         col += 7;
         return IMPRIMA;
     }
-    if (strncmp(input, "verdadeiro", 10) == 0 && !isalnum(input[10])) {
+    if (strncasecmp(input, "verdadeiro", 10) == 0 && !isalnum(input[10])) {
         strncpy(last_token, input, 10);
         last_token[10] = '\0';
         input += 10;
         col += 10;
         return VERDADEIRO;
     }
-    if (strncmp(input, "falso", 5) == 0 && !isalnum(input[5])) {
+    if (strncasecmp(input, "falso", 5) == 0 && !isalnum(input[5])) {
         strncpy(last_token, input, 5);
         last_token[5] = '\0';
         input += 5;
         col += 5;
         return FALSO;
     }
-    if (*input == 'e') {
+    if (strncasecmp(input, "e", 1) == 0 && !isalnum(input[1])) {
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
         input++;
         col++;
         return E;
     }
-    if (strncmp(input, "ou", 2) == 0 && !isalnum(input[2])) {
+    if (strncasecmp(input, "ou", 2) == 0 && !isalnum(input[2])) {
         strncpy(last_token, input, 2);
         last_token[2] = '\0';
         input += 2;
         col += 2;
         return OU;
     }
-    if (strncmp(input, "nao", 3) == 0 && !isalnum(input[3])) {
+    if (strncasecmp(input, "nao", 3) == 0 && !isalnum(input[3])) {
         strncpy(last_token, input, 3);
         last_token[3] = '\0';
         input += 3;
         col += 3;
         return NAO;
     }
-    if (strncmp(input, "div", 3) == 0 && !isalnum(input[3])) {
+    if (strncasecmp(input, "div", 3) == 0 && !isalnum(input[3])) {
         strncpy(last_token, input, 3);
         last_token[3] = '\0';
         input += 3;
@@ -285,6 +326,7 @@ int getToken() {
         return DIV;
     }
 
+    // Delimitadores
     if (*input == ';') {
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
@@ -419,57 +461,59 @@ int getToken() {
         return ATRIBUICAO;
     }
 
-    // Verifica se é um número
+    // Número
     if (isdigit(*input)) {
         char *start = input;
         input++;
-        while (isdigit(*input)) 
-            input++;
-        strncpy(lastTokenValue, start, input - start);  // Copia o número para lastTokenValue
-        lastTokenValue[input - start] = '\0';           // Adiciona o terminador de string
-        return NUM_INT;
-    }
-    if (isdigit(*input)) {
-        char *start = input;
-        input++;
-        row++;
+        col++;
+
         while (isdigit(*input)) {
             input++;
-            row++
+            col++;
         }
-            
+
         if (*input == '.') {
             input++;
-            row++;
+            col++;
+
             if (isdigit(*input)) {
-                input++
-                row++;
+                input++;
+                col++;
+
                 while (isdigit(*input)) {
                     input++;
-                    row++
+                    col++;
                 }
+
+                strncpy(last_token, start, input - start);  
+                last_token[input - start] = '\0';           
+                return NUM_REAL;
             }
             else
                 return -1;
         }
-            
-        strncpy(lastTokenValue, start, input - start);  // Copia o número para lastTokenValue
-        lastTokenValue[input - start] = '\0';           // Adiciona o terminador de string
-        return NUM_REAL;
+        else if (*input == ' ' || *input == '\n' || *input == '\0') {
+            strncpy(last_token, start, input - start);  
+            last_token[input - start] = '\0';           
+            return NUM_INT;
+        }
+        else 
+            return -1;
     }
+
     //Identificador
     if (isalpha(*input) || *input == '_') {
         char *start = input;
         input++;
-        row++;
+        col++;
 
         while(isalnum(*input) || *input == '_') {
-            row++;
+            col++;
             input++;
         }
 
-        strncpy(lastTokenValue, start, input - start);  
-        lastTokenValue[input - start] = '\0';           
+        strncpy(last_token, start, input - start);  
+        last_token[input - start] = '\0';           
         return ID;
     }
 
@@ -477,8 +521,14 @@ int getToken() {
         last_token[0] = '\0';
     }
     
+    // Armazena o input de erro
+    strncpy(last_token, input, 1);
+    last_token[1] = '\0';
+    error_flag = 1;
+
     return -1; // Token inválido
 }
+
 
 
 int main() {
@@ -488,9 +538,18 @@ int main() {
         input = buffer;
         error_flag = 0;
         row++;
-        col = 1;
-        advance();  // Inicializa o primeiro token
-        S();        // Inicia a análise sintática
+        col = 0;
+
+        token = getToken();
+
+        if (token == -1) {
+            if(!first_print)
+                printf("\n");
+
+            first_print = 0;
+            printf("ERRO LEXICO. Linha: %d Coluna: %d -> '%s'", row, col, last_token);
+        }
+        
         if (error_flag != 1){
             if(!first_print)
                 printf("\n");
