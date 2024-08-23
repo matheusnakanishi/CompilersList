@@ -66,6 +66,7 @@ int first_print = 1;
 int row = 0;
 int col = 0;
 int block_comment = 0;
+int error_col;
 
 int getToken() {
 
@@ -74,8 +75,12 @@ int getToken() {
         while (*input != '}') {
             if (*input == '\n')
                 return 0;
-            if (*input == '\0')
-                return -1; //comentário em bloco não finalizado
+            if (*input == '\0') {
+                if(!first_print)
+                    printf("\n");
+                printf("ERRO LEXICO. Comentario em bloco nao finalizado");
+                return 0; //comentário em bloco não finalizado
+            }
             input++;
             col++;
         }
@@ -91,21 +96,23 @@ int getToken() {
     }
 
     // Comentário de uma linha
-    if (strncmp(input, "//", 2) == 0) {
+    if (strncmp(input, "//", 2) == 0)
         return 0;
-    }
 
     // Comentário em bloco
     if (*input == '{') {
         block_comment = 1;
         input++;
         col++;
+        error_col = col;
 
         while (*input != '}') {
             if (*input == '\n')
                 return 0;
-            if (*input == '\0')
+            if (*input == '\0'){
+                error_col = col;
                 return -1; //comentário em bloco não finalizado
+            }
             input++;
             col++;
         }
@@ -466,6 +473,7 @@ int getToken() {
         char *start = input;
         input++;
         col++;
+        error_col = col;
 
         while (isdigit(*input)) {
             input++;
@@ -490,6 +498,8 @@ int getToken() {
                 return NUM_REAL;
             }
             else
+                strncpy(last_token, start, input - start);  
+                last_token[input - start] = '\0';
                 return -1;
         }
         else if (*input == ' ' || *input == '\n' || *input == '\0') {
@@ -497,8 +507,15 @@ int getToken() {
             last_token[input - start] = '\0';           
             return NUM_INT;
         }
-        else 
+        else { 
+            while (*input != ' ' && *input && '\n' && *input != '\0') {
+                input++;
+                col++;
+            }
+            strncpy(last_token, start, input - start);  
+            last_token[input - start] = '\0';
             return -1;
+        }
     }
 
     //Identificador
@@ -506,6 +523,7 @@ int getToken() {
         char *start = input;
         input++;
         col++;
+        error_col = col;
 
         while(isalnum(*input) || *input == '_') {
             col++;
@@ -525,6 +543,8 @@ int getToken() {
     strncpy(last_token, input, 1);
     last_token[1] = '\0';
     error_flag = 1;
+    col++; 
+    error_col = col;
 
     return -1; // Token inválido
 }
@@ -541,22 +561,21 @@ int main() {
         col = 0;
 
         token = getToken();
+        //printf("%d\n", token);
 
         if (token == -1) {
             if(!first_print)
                 printf("\n");
 
             first_print = 0;
-            printf("ERRO LEXICO. Linha: %d Coluna: %d -> '%s'", row, col, last_token);
+            printf("ERRO LEXICO. Linha: %d Coluna: %d -> '%s'", row, error_col, last_token);
         }
         
-        if (error_flag != 1){
+        /*if (error_flag != 1){
             if(!first_print)
                 printf("\n");
             first_print = 0;
-
-            printf("CADEIA ACEITA");
-        }
+        }*/
     }
     
     return 0;
