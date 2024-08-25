@@ -462,14 +462,32 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "file.l"
-#line 4 "file.l"
+#line 1 "lexico.l"
+#line 4 "lexico.l"
 
 #include <stdio.h>
+#include <string.h>
+#include <sintatico.tab.h>
 
+int lex_error = 0;
+int text_before = 0;
+int col = 0;
+int eof = 0;
 
-#line 472 "lex.yy.c"
-#line 473 "lex.yy.c"
+void char_error() {
+    if (!lex_error) {
+        if (text_before)
+            printf("\n");
+        printf("Caractere(s) invalido(s) -> [%s", yytext);
+    }
+    else {
+        printf(",%s", yytext);
+    }
+    lex_error = 1;
+}
+
+#line 490 "lex.yy.c"
+#line 491 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -686,10 +704,10 @@ YY_DECL
 		}
 
 	{
-#line 10 "file.l"
+#line 28 "lexico.l"
 
 
-#line 693 "lex.yy.c"
+#line 711 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -748,103 +766,105 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 12 "file.l"
-{ printf("ADD\n"); }
+#line 30 "lexico.l"
+{ col++; return ADD; }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 13 "file.l"
-{ printf("SUB\n"); }
+#line 31 "lexico.l"
+{ col++; return SUB; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 14 "file.l"
-{ printf("MUL\n"); }
+#line 32 "lexico.l"
+{ col++; return MUL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 15 "file.l"
-{ printf("DIV\n"); }
+#line 33 "lexico.l"
+{ col++; return DIV; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 16 "file.l"
-{ printf("EXP\n"); }
+#line 34 "lexico.l"
+{ col++; return EXP; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 17 "file.l"
-{ printf("MOD\n"); }
+#line 35 "lexico.l"
+{ col++; return MOD; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 19 "file.l"
-{ printf("L_PAREN\n"); }
+#line 37 "lexico.l"
+{ col++; return L_PAREN; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 20 "file.l"
-{ printf("R_PAREN\n"); }
+#line 38 "lexico.l"
+{ col++; return R_PAREN; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 22 "file.l"
-{ printf("SEN\n"); }
+#line 40 "lexico.l"
+{ col+= 3; return SEN; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 23 "file.l"
-{ printf("COS\n"); }
+#line 41 "lexico.l"
+{ col+= 3; return COS; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 24 "file.l"
-{ printf("TAN\n"); }
+#line 42 "lexico.l"
+{ col+= 3; return TAN; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 25 "file.l"
-{ printf("ABS\n"); }
+#line 43 "lexico.l"
+{ col+= 3; return ABS; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 27 "file.l"
-{ printf("INT\n"); }
+#line 45 "lexico.l"
+{ col+= strlen(yytext); return NUM_INT; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 29 "file.l"
-{ printf("REAL\n"); }
+#line 46 "lexico.l"
+{ col+= strlen(yytext); return NUM_REAL; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 31 "file.l"
-{ printf("VAR\n"); }
+#line 47 "lexico.l"
+{ col+= strlen(yytext); return VAR; }
 	YY_BREAK
 case 16:
 /* rule 16 can match eol */
 YY_RULE_SETUP
-#line 33 "file.l"
-{}
+#line 49 "lexico.l"
+{ if(lex_error) printf("]"); col = 0; text_before = 1; lex_error = 0;  return EOL; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 34 "file.l"
-{}
+#line 50 "lexico.l"
+{ col++; }
+	YY_BREAK
+case YY_STATE_EOF(INITIAL):
+#line 51 "lexico.l"
+{ if(lex_error) printf("]"); eof = 1; return EOL; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 35 "file.l"
-{ printf("ERRO\n"); }
+#line 52 "lexico.l"
+{ col++; char_error(); return ERRO; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 37 "file.l"
+#line 54 "lexico.l"
 ECHO;
 	YY_BREAK
-#line 846 "lex.yy.c"
-case YY_STATE_EOF(INITIAL):
-	yyterminate();
+#line 868 "lex.yy.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1847,10 +1867,5 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 37 "file.l"
+#line 54 "lexico.l"
 
-
-int main() {
-    yylex();
-    return 0;
-}

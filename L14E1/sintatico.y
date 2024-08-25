@@ -5,7 +5,12 @@
 extern int yylex();
 extern char* yytext;
 
-void yyerror(void *s);
+extern int text_before;
+extern int lex_error;
+extern int col;
+extern int eof;
+
+void yyerror(const char *s);
 
 %}
 
@@ -25,15 +30,48 @@ void yyerror(void *s);
 %token NUM_REAL
 %token VAR
 %token EOL
+%token ERRO
 
-%start
+%start inicial
+
+// Definindo precedência e associatividade
+%left ADD SUB
+%left MUL DIV MOD
+%right EXP
 
 %%
 
+inicial: expressao EOL  { if(text_before) printf("\n"); if(!lex_error) printf("EXPRESSAO CORRETA"); }
+;
+
+expressao: L_PAREN expressao R_PAREN    {}
+    | expressao ADD expressao           {}
+    | expressao SUB expressao           {}
+    | SUB expressao                     {}
+    | ADD expressao                     {}
+    | expressao MUL expressao           {}
+    | expressao DIV expressao           {}
+    | expressao EXP expressao           {}
+    | expressao MOD expressao           {}
+    | final L_PAREN expressao R_PAREN   {}
+    | NUM_INT                           {}
+    | NUM_REAL                          {}
+;
+
+final: SEN  {}
+    | COS   {}
+    | TAN   {}
+    | ABS   {}
+;
 
 %%
 
 int main(int argc, char** argv) {
-    yyparse();
+    while(!eof){
+        yyparse();
+    }
+        
     return 0;
 }
+
+void yyerror(const char *s) {}
