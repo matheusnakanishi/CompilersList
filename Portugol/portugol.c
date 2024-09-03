@@ -1158,3 +1158,7 @@ int main() {
     
     return 0;
 }
+
+// Tirar while
+// Quando encontrar \n chamar fgets input = buffer e getToken()
+// Reconhecer String
