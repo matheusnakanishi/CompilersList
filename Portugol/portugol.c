@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 // Palavras reservadas
+#define ERRO -1
 #define ALGORITMO 1
 #define INICIO 2
 #define FIM 3
@@ -57,6 +58,7 @@
 #define ID 51
 #define NUM_INT 52
 #define NUM_REAL 53
+#define END 54
 
 char *input;
 int token;
@@ -69,7 +71,6 @@ int block_comment = 0;
 int error_col;
 
 int getToken() {
-
     // Continuação de comentário em bloco em outra linha
     if (block_comment) {
         while (*input != '}') {
@@ -334,6 +335,13 @@ int getToken() {
     }
 
     // Delimitadores
+    if (*input == '&') {
+        strncpy(last_token, input, 1);
+        last_token[1] = '\0';
+        input++;
+        col++;
+        return END;
+    }
     if (*input == ';') {
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
@@ -549,7 +557,577 @@ int getToken() {
     return -1; // Token inválido
 }
 
+// Sintatico
+void START();
+void PROGRAMA();
+void BV();
+void PF();
+void BC();
+void DPROC();
+void PARAMETROS();
+void DPARAM();
+void TB();
+void DI();
+void DS();
+void DS_PRIME();
+void DT();
+void VM();
+void DIMENSAO();   
+void DI_PRIME();
+void DIMENSAO_PRIME();
+void LC();
+void COMANDOS();
+void LC_PRIME();
+void C_PRIME1();
+void C_PRIME2();
+void C_PRIME3();
+void EXPRESSAO();
+void VARIAVEL();
+void EI();
+void ES();
+void EXPRESSAO_PRIME();
+void OPR();
+void TERMO();
+void OPB();
+void TERMO_PRIME();
+void FATOR();
+void FATOR_PRIME();
+void VARIAVEL_PRIME();
+void EI_PRIME();
+void ES_PRIME();
 
+void advance() {
+    token = getToken();
+}
+
+void eat(int t) {
+    if (token == t)
+        advance();
+    else    
+        printf("erro");
+}
+
+void START() {
+    if (token == ALGORITMO) {
+        PROGRAMA();
+        eat(END);
+    }
+}
+
+void PROGRAMA() {
+    if (token == ALGORITMO) {
+        eat(ALGORITMO);
+        eat(ID);
+        eat(PONTO_VIRG);
+        BV();
+        PF();
+        BC();
+    }
+    else
+        printf("erro");
+}
+
+void PF() {
+    if (token == PROCEDIMENTO){
+        DPROC();
+        PF();
+    }
+    else if (token == FUNCAO) {
+        PF();
+    }
+    else if (token == INICIO) {
+        return;
+    }
+}
+
+void DPROC() {
+    if (token == PROCEDIMENTO) {
+        eat(PROCEDIMENTO);
+        eat(ID);
+        PARAMETROS();
+        eat(PONTO_VIRG);
+        DPARAM();
+        BV();
+        BC();
+    }
+}
+
+void DF() {
+    if (token == FUNCAO) {
+        eat(FUNCAO);
+        eat(ID);
+        PARAMETROS();
+        eat(DOIS_PONTOS);
+        TB();
+        eat(PONTO_VIRG);
+        DPARAM();
+        BV();
+        BC();
+        eat(PONTO_VIRG);
+    }
+}
+
+void PARAMETROS() {
+    if (token == DOIS_PONTOS || token) {
+        return;
+    }
+    else if (token == ABRE_PAREN) {
+        eat(ABRE_PAREN);
+        DI();
+        eat(FECHA_PAREN);
+    }
+
+}
+
+void DPARAM() {
+    if (token == ID || token == TIPO || token == INTEIRO || token == REAL || token == CARACTERE || token == LOGICO) {
+        DS();
+    }
+    else if (token == PROCEDIMENTO || token == FUNCAO || token == VARIAVEIS || token == INICIO) {
+        return;
+    }
+
+}
+
+void BV() {
+    if (token == END || token == PROCEDIMENTO || token == FUNCAO || token == INICIO) {
+        return;
+    }
+    if (token == VARIAVEIS) {
+        eat(VARIAVEIS);
+        DS();
+    }
+}
+
+void DS() {
+    if (token == ID || token == INTEIRO || token == REAL || token == CARACTERE || token == LOGICO) {
+        DV();
+        DS_PRIME();
+    }
+    else if (token == TIPO) {
+        DT();
+        DS_PRIME();
+    }
+}
+
+void DS_PRIME() {
+    if (token == END || token == PROCEDIMENTO || token == FUNCAO || token == VARIAVEIS || token == INICIO) {
+        return;
+    }
+    else if (token == ID || token == TIPO || token == INTEIRO || token == REAL || token == CARACTERE || token == LOGICO) {
+        DS();
+    }
+}
+
+void DT() {
+    if (token == TIPO) {
+        eat(TIPO);
+        eat(ID);
+        eat(IGUAL);
+        VM();
+        eat(ABRE_COLCH);
+        DIMENSAO();
+        eat(FECHA_COLCH);
+        TB();
+        eat(PONTO_VIRG);
+    }
+}
+
+void DV() {
+    if (token == ID || token == INTEIRO || token == REAL || token == CARACTERE || token == LOGICO) {
+        TB();
+        eat(DOIS_PONTOS);
+        DI();
+        eat(PONTO_VIRG);
+    }
+}
+
+void DI() {
+    if (token == ID) {
+        eat(ID);
+        DI_PRIME();
+    }
+}
+
+void DI_PRIME() {
+    if (token == PONTO_VIRG || token == FECHA_PAREN) {
+        return;
+    }
+    else if (token == VIRGULA) {
+        eat(VIRGULA);
+        DI();
+    }
+}
+
+void VM() {
+    if (token == VETOR) {
+        eat(VETOR);
+    }
+    else if (token == MATRIZ) {
+        eat(MATRIZ);
+    }
+}
+
+void DIMENSAO() {
+    if (token == NUM_INT) {
+        eat(NUM_INT);
+        eat(DOIS_PONTOS);
+        eat(NUM_INT);
+        DIMENSAO_PRIME();
+    }
+}
+
+void DIMENSAO_PRIME() {
+    if (token == FECHA_COLCH) {
+        return;
+    }
+    else if (token == VIRGULA) {
+        eat(VIRGULA);
+        DIMENSAO();
+    }
+}
+
+void TB() {
+    if (token == ID) {
+        eat(ID);
+    }
+    else if (token == INTEIRO) {
+        eat(INTEIRO);
+    }
+    else if (token == REAL) {
+        eat(REAL);
+    }
+    else if (token == CARACTERE) {
+        eat(CARACTERE);
+    }
+    else if (token == LOGICO) {
+        eat(LOGICO);
+    }
+}
+
+void BC() {
+    if (token == INICIO) {
+        eat(INICIO);
+        LC();
+        eat(FIM);
+    }
+}
+
+void LC() {
+    if (token == ID || token == SE || token == ENQUANTO || token == PARA || token == REPITA || token == LEIA || token == IMPRIMA) {
+        COMANDOS();
+        eat(PONTO_VIRG);
+        LC_PRIME();
+    }
+}
+
+void LC_PRIME() {
+    if (token == ID || token == SE || token == ENQUANTO || token == PARA || token == REPITA || token == LEIA || token == IMPRIMA) {
+        LC();
+    }
+    else if (token == FIM || token == SENAO || token == ATE) {
+        return;
+    }
+}
+
+void COMANDOS() {
+    if (token == ID) {
+        eat(ID);
+        C_PRIME1();
+    }
+    else if (token == SE) {
+        eat(SE);
+        EXPRESSAO();
+        eat(ENTAO);
+        LC();
+        C_PRIME2;
+    }
+    else if (token == ENQUANTO) {
+        eat(ENQUANTO);
+        EXPRESSAO();
+        eat(FACA);
+        LC();
+        eat(FIM);
+        eat(ENQUANTO);
+    }
+    else if (token == PARA) {
+        eat(PARA);
+        eat(ID);
+        eat(DE);
+        EXPRESSAO();
+        eat(ATE);
+        EXPRESSAO();
+        eat(ATE);
+        EXPRESSAO();
+        C_PRIME3();
+    }
+    else if (token == REPITA) {
+        eat(REPITA);
+        LC();
+        eat(ATE);
+        EXPRESSAO();
+    }
+    else if (token == LEIA) {
+        eat(LEIA);
+        eat(ABRE_PAREN);
+        VARIAVEL();
+        eat(FECHA_PAREN);
+    }
+    else if (token == IMPRIMA) {
+        eat(IMPRIMA);
+        eat(ABRE_PAREN);
+        EI();
+        eat(FECHA_PAREN);
+    }
+}
+
+void C_PRIME1() {
+    if (token == PONTO_VIRG) {
+        return;
+    }
+    else if (token == ABRE_PAREN) {
+        eat(ABRE_PAREN);
+        EI();
+        eat(FECHA_PAREN);
+    }
+    else if (token == ABRE_COLCH) {
+        eat(ABRE_COLCH);
+        EI();
+        eat(FECHA_COLCH);
+        eat(ATRIBUICAO);
+        EXPRESSAO();
+    }
+    else if (token == ATRIBUICAO) {
+        eat(ATRIBUICAO);
+        EXPRESSAO();
+    }
+}
+
+void C_PRIME2() {
+    if (token == FIM) {
+        eat(FIM);
+        eat(SE);
+    }
+    if (token == SENAO) {
+        eat(SENAO);
+        LC();
+        eat(FIM);
+        eat(SE);
+    }
+}
+
+void C_PRIME3() {
+    if (token == FACA) {
+        eat(FACA);
+        LC();
+        eat(FIM);
+        eat(PARA);
+    }
+    else if (token == PASSO) {
+        eat(PASSO);
+        EXPRESSAO();
+        eat(FACA);
+        LC();
+        eat(FIM);
+        eat(PARA);
+    }
+    
+}
+
+void EXPRESSAO() {
+    if (token == ID || token == ABRE_PAREN || token == NUM_INT || token == MAIS || token == MENOS || token == NAO || token == NUM_REAL || token == VERDADEIRO || token == FALSO || token == STRING) {
+        ES();
+        EXPRESSAO_PRIME();
+    }
+}
+
+void EXPRESSAO_PRIME() {
+    if (token == PONTO_VIRG || token == FECHA_PAREN || token == FECHA_COLCH || token == VIRGULA || token == ENTAO || token == FACA || token == ATE || token == PASSO) {
+        return;
+    }
+    else if (token == IGUAL || token == DIFERENTE || token == MENOR || token == MAIOR || token == MENOR_IGUAL || token == MAIOR_IGUAL) {
+        OPR();
+        ES();
+        EXPRESSAO_PRIME();
+    }
+}
+
+void ES() {
+    if (token == ID || token == ABRE_PAREN || token == NUM_INT || token == NAO || token == NUM_REAL || token == VERDADEIRO || token == FALSO || token == STRING) {
+        TERMO();
+        ES_PRIME();
+    }
+    else if (token == MAIS || token == MENOS) {
+        OPB();
+        TERMO();
+        ES_PRIME();
+    }
+}
+
+void ES_PRIME() {
+    if (token == PONTO_VIRG || token == FECHA_PAREN || token == IGUAL || token == FECHA_COLCH || token == VIRGULA || token == ENTAO || token == FACA || token == ATE || token == PASSO || token == DIFERENTE || token == MENOR
+        || token == MAIOR || token == MENOR_IGUAL || token == MAIOR_IGUAL) {
+        return;
+    }
+    else if (token == OU) {
+        eat(OU);
+        TERMO();
+        ES_PRIME();
+    }
+    else if (token == MAIS || token == MENOS) {
+        OPB();
+        TERMO();
+        ES_PRIME();
+    }
+}
+
+void OPR() {
+    if (token == IGUAL) {
+        eat(IGUAL);
+    }
+    else if (token == DIFERENTE) {
+        eat(DIFERENTE);
+    }
+    else if (token == MENOR) {
+        eat(MENOR);
+    }
+    else if (token == MAIOR) {
+        eat(MAIOR);
+    }
+    else if (token == MENOR_IGUAL) {
+        eat(MENOR_IGUAL);
+    }
+    else if (token == MAIOR_IGUAL) {
+        eat(MAIOR_IGUAL);
+    }
+}
+
+void OPB() {
+    if (token == MAIS) {
+        eat(MAIS);
+    }
+    else if (token == MENOS) {
+        eat(MENOS);
+    }
+}
+
+void TERMO() {
+    if (token == ID || token == ABRE_PAREN || token == NUM_INT || token == NAO || token == NUM_REAL || token == VERDADEIRO || token == FALSO || token == STRING) {
+        FATOR();
+        TERMO_PRIME();
+    }
+}
+
+void TERMO_PRIME() {
+    if (token == PONTO_VIRG || token == FECHA_PAREN || token == IGUAL || token == FECHA_COLCH || token == VIRGULA || token == ENTAO || token == FACA || token == ATE || token == PASSO || token == OU || token == DIFERENTE
+        || token == MENOR || token == MAIOR || token == MENOR_IGUAL || token == MAIOR_IGUAL || token == MAIS || token == MENOS) {
+        return;
+    }
+    else if (token == VEZES) {
+        eat(VEZES);
+        FATOR();
+        TERMO_PRIME();
+    }
+    else if (token == DIVISAO) {
+        eat(DIVISAO);
+        FATOR();
+        TERMO_PRIME();
+    }
+    else if (token == DIV) {
+        eat(DIV);
+        FATOR();
+        TERMO_PRIME();
+    }
+    else if (token == E) {
+        eat(E);
+        FATOR();
+        TERMO_PRIME();
+    }
+}
+
+void FATOR() {
+    if (token == ID) {
+        eat(ID);
+        FATOR_PRIME();
+    }
+    else if (token == ABRE_PAREN) {
+        eat(ABRE_PAREN);
+        EXPRESSAO();
+        eat(FECHA_PAREN);
+    }
+    else if (token == NUM_INT) {
+        eat(NUM_INT);
+    }
+    else if (token == NAO) {
+        eat(NAO);
+        FATOR();
+    }
+    else if (token == NUM_REAL) {
+        eat(NUM_REAL);
+    }
+    else if (token == VERDADEIRO) {
+        eat(VERDADEIRO);
+    }
+    else if (token == FALSO) {
+        eat(FALSO);
+    }
+    else if (token == STRING) {
+        eat(STRING);
+    }
+}
+
+void FATOR_PRIME() {
+    if (token == PONTO_VIRG || token == FECHA_PAREN || token == IGUAL || token == FECHA_COLCH || token == VIRGULA || token == ENTAO || token == FACA || token == ATE || token == PASSO
+        || token == OU || token == DIFERENTE || token == MENOR || token == MAIOR || token == MENOR_IGUAL || token == MAIOR_IGUAL || token == MAIS || token == MENOS || token == VEZES
+        || token == DIVISAO || token == DIV || token == E) {
+        return;
+    }
+    else if (token == ABRE_PAREN) {
+        eat(ABRE_PAREN);
+        EI();
+        eat(FECHA_PAREN);
+    }
+    else if (token == ABRE_COLCH) {
+        eat(ABRE_COLCH);
+        EI();
+        eat(FECHA_COLCH);
+    }
+}
+
+void VARIAVEL() {
+    if (token == ID) {
+        eat(ID);
+        VARIAVEL_PRIME();
+    }
+}
+
+void VARIAVEL_PRIME() {
+    if (token == FECHA_PAREN) {
+        return;
+    }
+    else if (token == ABRE_COLCH) {
+        eat(ABRE_COLCH);
+        EI();
+        eat(FECHA_COLCH);
+    }
+}
+
+void EI() {
+    if (token == ID || token == ABRE_PAREN || token == NUM_INT || token == MAIS || token == MENOS || token == NAO || token == NUM_REAL || token == VERDADEIRO || token == FALSO || token == STRING) {
+        EXPRESSAO();
+        EI_PRIME();
+    }
+}
+
+void EI_PRIME() {
+    if (token == FECHA_PAREN || token == FECHA_COLCH) {
+        return;
+    }
+    else if (token == VIRGULA) {
+        eat(VIRGULA);
+        EI();
+    }
+}
 
 int main() {
     char buffer[60000];
