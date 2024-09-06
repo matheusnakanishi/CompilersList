@@ -79,11 +79,16 @@ extern int text_before;
 extern int lex_error;
 extern int col;
 extern int eof;
+extern int yychar;
+
+int sintatic_error = 0;
+int error_char;
+int erro_aux = 0;
 
 void yyerror(const char *s);
 
 
-#line 87 "sintatico.tab.c"
+#line 92 "sintatico.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -134,7 +139,8 @@ enum yysymbol_kind_t
   YYSYMBOL_YYACCEPT = 20,                  /* $accept  */
   YYSYMBOL_inicial = 21,                   /* inicial  */
   YYSYMBOL_expressao = 22,                 /* expressao  */
-  YYSYMBOL_final = 23                      /* final  */
+  YYSYMBOL_fator = 23,                     /* fator  */
+  YYSYMBOL_termo = 24                      /* termo  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -460,18 +466,18 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  16
+#define YYFINAL  23
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   53
+#define YYLAST   64
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  20
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  4
+#define YYNNTS  5
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  18
+#define YYNRULES  22
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  34
+#define YYNSTATES  47
 
 /* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   274
@@ -522,8 +528,9 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    44,    44,    47,    48,    49,    50,    51,    52,    53,
-      54,    55,    56,    57,    58,    61,    62,    63,    64
+       0,    49,    49,    50,    51,    54,    55,    56,    59,    60,
+      61,    62,    63,    66,    67,    68,    69,    70,    71,    72,
+      73,    74,    75
 };
 #endif
 
@@ -542,7 +549,7 @@ static const char *const yytname[] =
   "\"end of file\"", "error", "\"invalid token\"", "ADD", "SUB", "MUL",
   "DIV", "EXP", "MOD", "L_PAREN", "R_PAREN", "SEN", "COS", "TAN", "ABS",
   "NUM_INT", "NUM_REAL", "VAR", "EOL", "ERRO", "$accept", "inicial",
-  "expressao", "final", YY_NULLPTR
+  "expressao", "fator", "termo", YY_NULLPTR
 };
 
 static const char *
@@ -552,7 +559,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-3)
+#define YYPACT_NINF (-8)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -566,10 +573,11 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      21,    21,    21,    21,    -3,    -3,    -3,    -3,    -3,    -3,
-      13,     4,     5,    -2,    -2,    35,    -3,    21,    21,    21,
-      21,    21,    21,    -3,    21,    -3,    -2,    -2,     8,     8,
-       8,     8,    43,    -3
+      21,    -8,    47,    47,    47,    -7,    22,    34,    40,    -8,
+      -8,    -8,    10,    36,    39,    -8,    -8,    -8,     1,    47,
+      47,    47,    47,    -8,    47,    47,    -8,    -8,    47,    47,
+      47,    47,    -8,     3,     5,    13,    38,    39,    39,    -8,
+      -8,    -8,    -8,    -8,    -8,    -8,    -8
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -577,22 +585,23 @@ static const yytype_int8 yypact[] =
    means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       0,     0,     0,     0,    15,    16,    17,    18,    13,    14,
-       0,     0,     0,     7,     6,     0,     1,     0,     0,     0,
-       0,     0,     0,     2,     0,     3,     4,     5,     8,     9,
-      10,    11,     0,    12
+       0,     4,     0,     0,     0,     0,     0,     0,     0,    15,
+      16,    14,     0,     0,     5,     8,    17,    18,     0,     0,
+       0,     0,     0,     1,     0,     0,     2,     3,     0,     0,
+       0,     0,    13,     0,     0,     0,     0,     6,     7,     9,
+      10,    11,    12,    19,    20,    21,    22
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-      -3,    -3,    -1,    -3
+      -8,    -8,    -1,    28,    -2
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,    10,    11,    12
+       0,    12,    13,    14,    15
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -600,46 +609,51 @@ static const yytype_int8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-      13,    14,    15,    19,    20,    21,    22,    17,    18,    19,
-      20,    21,    22,    16,    24,    21,    26,    27,    28,    29,
-      30,    31,    23,    32,     1,     2,     0,     0,     0,     0,
-       3,     0,     4,     5,     6,     7,     8,     9,    17,    18,
-      19,    20,    21,    22,     0,    25,    17,    18,    19,    20,
-      21,    22,     0,    33
+      16,    17,    19,    18,    24,    25,    24,    25,    24,    25,
+      23,    32,     0,    43,     0,    44,    24,    25,    33,    34,
+      35,    36,     1,    45,     2,     3,    39,    40,    41,    42,
+       4,    20,     5,     6,     7,     8,     9,    10,    11,    24,
+      25,    24,    25,    21,    28,    29,    30,    31,    46,    22,
+       2,     3,    37,    38,    26,    27,     4,     0,     5,     6,
+       7,     8,     9,    10,    11
 };
 
 static const yytype_int8 yycheck[] =
 {
-       1,     2,     3,     5,     6,     7,     8,     3,     4,     5,
-       6,     7,     8,     0,     9,     7,    17,    18,    19,    20,
-      21,    22,    18,    24,     3,     4,    -1,    -1,    -1,    -1,
-       9,    -1,    11,    12,    13,    14,    15,    16,     3,     4,
-       5,     6,     7,     8,    -1,    10,     3,     4,     5,     6,
-       7,     8,    -1,    10
+       2,     3,     9,     4,     3,     4,     3,     4,     3,     4,
+       0,    10,    -1,    10,    -1,    10,     3,     4,    19,    20,
+      21,    22,     1,    10,     3,     4,    28,    29,    30,    31,
+       9,     9,    11,    12,    13,    14,    15,    16,    17,     3,
+       4,     3,     4,     9,     5,     6,     7,     8,    10,     9,
+       3,     4,    24,    25,    18,    19,     9,    -1,    11,    12,
+      13,    14,    15,    16,    17
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
    state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,     3,     4,     9,    11,    12,    13,    14,    15,    16,
-      21,    22,    23,    22,    22,    22,     0,     3,     4,     5,
-       6,     7,     8,    18,     9,    10,    22,    22,    22,    22,
-      22,    22,    22,    10
+       0,     1,     3,     4,     9,    11,    12,    13,    14,    15,
+      16,    17,    21,    22,    23,    24,    24,    24,    22,     9,
+       9,     9,     9,     0,     3,     4,    18,    19,     5,     6,
+       7,     8,    10,    22,    22,    22,    22,    23,    23,    24,
+      24,    24,    24,    10,    10,    10,    10
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    20,    21,    22,    22,    22,    22,    22,    22,    22,
-      22,    22,    22,    22,    22,    23,    23,    23,    23
+       0,    20,    21,    21,    21,    22,    22,    22,    23,    23,
+      23,    23,    23,    24,    24,    24,    24,    24,    24,    24,
+      24,    24,    24
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
-       0,     2,     2,     3,     3,     3,     2,     2,     3,     3,
-       3,     3,     4,     1,     1,     1,     1,     1,     1
+       0,     2,     2,     2,     1,     1,     3,     3,     1,     3,
+       3,     3,     3,     3,     1,     1,     1,     2,     2,     4,
+       4,     4,     4
 };
 
 
@@ -1103,109 +1117,133 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* inicial: expressao EOL  */
-#line 44 "sintatico.y"
-                        { if(text_before) printf("\n"); if(!lex_error) printf("EXPRESSAO CORRETA"); }
-#line 1109 "sintatico.tab.c"
-    break;
-
-  case 3: /* expressao: L_PAREN expressao R_PAREN  */
-#line 47 "sintatico.y"
-                                        {}
-#line 1115 "sintatico.tab.c"
-    break;
-
-  case 4: /* expressao: expressao ADD expressao  */
-#line 48 "sintatico.y"
-                                        {}
-#line 1121 "sintatico.tab.c"
-    break;
-
-  case 5: /* expressao: expressao SUB expressao  */
 #line 49 "sintatico.y"
-                                        {}
-#line 1127 "sintatico.tab.c"
+                        { if(text_before) printf("\n"); if(!lex_error && sintatic_error == 0) printf("EXPRESSAO CORRETA"); sintatic_error = 0; }
+#line 1123 "sintatico.tab.c"
     break;
 
-  case 6: /* expressao: SUB expressao  */
+  case 3: /* inicial: expressao ERRO  */
 #line 50 "sintatico.y"
-                                        {}
-#line 1133 "sintatico.tab.c"
+                        { erro_aux = 1; return 0; }
+#line 1129 "sintatico.tab.c"
     break;
 
-  case 7: /* expressao: ADD expressao  */
+  case 4: /* inicial: error  */
 #line 51 "sintatico.y"
-                                        {}
-#line 1139 "sintatico.tab.c"
+                        { if(sintatic_error == -1 || lex_error) return 0; sintatic_error = 1; error_char = yychar; return 0; }
+#line 1135 "sintatico.tab.c"
     break;
 
-  case 8: /* expressao: expressao MUL expressao  */
-#line 52 "sintatico.y"
-                                        {}
-#line 1145 "sintatico.tab.c"
-    break;
-
-  case 9: /* expressao: expressao DIV expressao  */
-#line 53 "sintatico.y"
-                                        {}
-#line 1151 "sintatico.tab.c"
-    break;
-
-  case 10: /* expressao: expressao EXP expressao  */
+  case 5: /* expressao: fator  */
 #line 54 "sintatico.y"
-                                        {}
-#line 1157 "sintatico.tab.c"
+                 {}
+#line 1141 "sintatico.tab.c"
     break;
 
-  case 11: /* expressao: expressao MOD expressao  */
+  case 6: /* expressao: expressao ADD fator  */
 #line 55 "sintatico.y"
-                                        {}
-#line 1163 "sintatico.tab.c"
+                          {}
+#line 1147 "sintatico.tab.c"
     break;
 
-  case 12: /* expressao: final L_PAREN expressao R_PAREN  */
+  case 7: /* expressao: expressao SUB fator  */
 #line 56 "sintatico.y"
-                                        {}
-#line 1169 "sintatico.tab.c"
+                          {}
+#line 1153 "sintatico.tab.c"
     break;
 
-  case 13: /* expressao: NUM_INT  */
-#line 57 "sintatico.y"
-                                        {}
-#line 1175 "sintatico.tab.c"
+  case 8: /* fator: termo  */
+#line 59 "sintatico.y"
+             {}
+#line 1159 "sintatico.tab.c"
     break;
 
-  case 14: /* expressao: NUM_REAL  */
-#line 58 "sintatico.y"
-                                        {}
-#line 1181 "sintatico.tab.c"
+  case 9: /* fator: fator MUL termo  */
+#line 60 "sintatico.y"
+                      {}
+#line 1165 "sintatico.tab.c"
     break;
 
-  case 15: /* final: SEN  */
+  case 10: /* fator: fator DIV termo  */
 #line 61 "sintatico.y"
-            {}
-#line 1187 "sintatico.tab.c"
+                      {}
+#line 1171 "sintatico.tab.c"
     break;
 
-  case 16: /* final: COS  */
+  case 11: /* fator: fator EXP termo  */
 #line 62 "sintatico.y"
-            {}
-#line 1193 "sintatico.tab.c"
+                      {}
+#line 1177 "sintatico.tab.c"
     break;
 
-  case 17: /* final: TAN  */
+  case 12: /* fator: fator MOD termo  */
 #line 63 "sintatico.y"
-            {}
-#line 1199 "sintatico.tab.c"
+                      {}
+#line 1183 "sintatico.tab.c"
     break;
 
-  case 18: /* final: ABS  */
-#line 64 "sintatico.y"
-            {}
-#line 1205 "sintatico.tab.c"
+  case 13: /* termo: L_PAREN expressao R_PAREN  */
+#line 66 "sintatico.y"
+                                 {}
+#line 1189 "sintatico.tab.c"
+    break;
+
+  case 14: /* termo: VAR  */
+#line 67 "sintatico.y"
+                {}
+#line 1195 "sintatico.tab.c"
+    break;
+
+  case 15: /* termo: NUM_INT  */
+#line 68 "sintatico.y"
+                {}
+#line 1201 "sintatico.tab.c"
+    break;
+
+  case 16: /* termo: NUM_REAL  */
+#line 69 "sintatico.y"
+                {}
+#line 1207 "sintatico.tab.c"
+    break;
+
+  case 17: /* termo: ADD termo  */
+#line 70 "sintatico.y"
+                {}
+#line 1213 "sintatico.tab.c"
+    break;
+
+  case 18: /* termo: SUB termo  */
+#line 71 "sintatico.y"
+                {}
+#line 1219 "sintatico.tab.c"
+    break;
+
+  case 19: /* termo: SEN L_PAREN expressao R_PAREN  */
+#line 72 "sintatico.y"
+                                    {}
+#line 1225 "sintatico.tab.c"
+    break;
+
+  case 20: /* termo: COS L_PAREN expressao R_PAREN  */
+#line 73 "sintatico.y"
+                                    {}
+#line 1231 "sintatico.tab.c"
+    break;
+
+  case 21: /* termo: TAN L_PAREN expressao R_PAREN  */
+#line 74 "sintatico.y"
+                                    {}
+#line 1237 "sintatico.tab.c"
+    break;
+
+  case 22: /* termo: ABS L_PAREN expressao R_PAREN  */
+#line 75 "sintatico.y"
+                                    {}
+#line 1243 "sintatico.tab.c"
     break;
 
 
-#line 1209 "sintatico.tab.c"
+#line 1247 "sintatico.tab.c"
 
       default: break;
     }
@@ -1398,14 +1436,45 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 67 "sintatico.y"
+#line 78 "sintatico.y"
 
 
 int main(int argc, char** argv) {
     while(!eof){
         yyparse();
-        //lex_error = 0;
-    }
+
+        if (sintatic_error == 2) {
+            if (yychar == EOL) 
+                sintatic_error = 0;
+            continue;
+        }
+        if (lex_error && !erro_aux) 
+            continue;
+
+        if (erro_aux) { 
+            sintatic_error = 0;
+            continue;
+        }
+
+        if (text_before) 
+            printf("\n");
+
+        if (sintatic_error == 1) { // tem erro sintatico
+
+            if (error_char == 0 || error_char == EOL || error_char == YYEMPTY) {  
+                printf("A expressao terminou de forma inesperada.");
+            } else {
+                printf("Erro sinatico na coluna [%d]: %s", col, yytext);
+            }
+            sintatic_error = 2;
+
+        } else if (sintatic_error == 0) {
+            printf("EXPRESSAO CORRETA");
+            sintatic_error = 0;     
+        }
+
+        text_before = 1; 
+    } 
         
     return 0;
 }
