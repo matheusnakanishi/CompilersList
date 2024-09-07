@@ -19,6 +19,10 @@ char last_token[5];
 int error_flag;
 int first_print = 1;
 
+void L();
+void S();
+void E();
+
 int getToken() {
     while (*input == ' ') 
         input++; // Ignora espaços em branco
@@ -223,8 +227,6 @@ void S() {
             error_flag = 1;
     }
 }
-
-
 
 int main() {
     char buffer[60000];
