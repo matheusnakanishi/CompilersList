@@ -3,168 +3,161 @@
 %x COMMENT
 
 %{
-#include <stdio.h>
-#include <string.h>
+
+#include <sintatico.tab.h>
+
+extern YYSTYPE yylval;
 
 int first_token = 1;	
 int col = 1;		
 int start_row;
 int start_col;
+int sintax_error = 0;
+char invalid_token[16] = "";
+int invToken_col;
+int invToken_row;
+
  
-void print_token(char *token, int *first_token) {
-	if((*first_token) == 0)
-		printf("\n");
-	
-	*first_token = 0;
-	printf("%s", token);
+void validToken() {
+	yylval.token.value = strdup(yytext);
+    yylval.token.col = col;
+    yylval.token.row = yylineno;
+    col += strlen(yytext);
 }
 
-void print_num(char *token, char *num, int *first_token) {
-	if((*first_token) == 0)
-		printf("\n");
-	*first_token = 0;
-	printf("%s(%s)", token, num);
+void invalidToken() {
+	sintax_error = 1;
+    strcpy(invalid_token, yytext);
+    invToken_row = yylineno;
+    invToken_col = col;
+    col += strlen(yytext);
 }
 
 %}
 
 
-
 %%
 
-"/*"				{ BEGIN(COMMENT); start_row = yylineno; start_col = col; col += strlen(yytext);}
-<COMMENT>"*/"		{ BEGIN(INITIAL); col += strlen(yytext);}
+"/*"				{ BEGIN(COMMENT); start_row = yylineno; start_col = col; validToken();}
+<COMMENT>"*/"		{ BEGIN(INITIAL); col += strlen(yytext); validToken(); col -= strlen(yytext);}
 
 <COMMENT>"/*" { 
-    char prox = input();
-    if (prox == '\n') 
+    char next = input();
+    if (next == '\n') 
 		yylineno--;
-    if (prox == '/') {
+    if (next == '/') {
         BEGIN(INITIAL); 
         col += 1 + strlen(yytext); 
     } else {
-        if (first_token == 0) 
+        if (!first_token) 
 			printf("\n");
+
         printf("warning:%d:%d: '%s' within block comment", yylineno, col, yytext); 
         col += strlen(yytext);
-        if (prox == '\n') yylineno++;
-        unput(prox);
+
+        if (next == '\n') 
+			yylineno++;
+
+        unput(next);
+		first_token = 0;
     }
-    first_token = 0;
 }
 
 <COMMENT>\n			{ col = 1;}
-<COMMENT>\t 		{ col += 4;}
-<COMMENT>.			{ col += strlen(yytext);}
-<COMMENT><<EOF>>	{ if(first_token == 0)printf("\n"); printf("error:lexical:%d:%d: unterminated comment", start_row, start_col); exit(1);}
+<COMMENT>.			{ validToken();}
+<COMMENT><<EOF>>	{ if(!first_token)printf("\n"); printf("error:lexical:%d:%d: unterminated comment", start_row, start_col); exit(1);}
 
-"//"(.)*\n      {} 
+<<EOF>>			{return END;}
 
-"void"          {print_token("VOID", &first_token); col += strlen(yytext);}
-"int"           {print_token("INT", &first_token); col += strlen(yytext);}
-"char"			{print_token("CHAR", &first_token); col += strlen(yytext);}
-"return"		{print_token("RETURN", &first_token); col += strlen(yytext);}
-"break"			{print_token("BREAK", &first_token); col += strlen(yytext);}
-"switch"		{print_token("SWITCH", &first_token); col += strlen(yytext);}
-"case"			{print_token("CASE", &first_token); col += strlen(yytext);}
-"default"		{print_token("DEFAULT", &first_token); col += strlen(yytext);}
-"do"			{print_token("DO", &first_token); col += strlen(yytext);}
-"while"			{print_token("WHILE", &first_token); col += strlen(yytext);}
-"for"			{print_token("FOR", &first_token); col += strlen(yytext);}
-"if"			{print_token("IF", &first_token); col += strlen(yytext);}
-"else"			{print_token("ELSE", &first_token); col += strlen(yytext);}
-"typedef"		{print_token("TYPEDEF", &first_token); col += strlen(yytext);}
-"struct"		{print_token("STRUCT", &first_token); col += strlen(yytext);}
-"+"				{print_token("PLUS", &first_token); col += strlen(yytext);}
-"-"				{print_token("MINUS", &first_token); col += strlen(yytext);}
-"*"				{print_token("MULTIPLY", &first_token); col += strlen(yytext);}
-"/"				{print_token("DIV", &first_token); col += strlen(yytext);}
-"%"				{print_token("REMAINDER", &first_token); col += strlen(yytext);}
-"++"			{print_token("INC", &first_token); col += strlen(yytext);}
-"--"			{print_token("DEC", &first_token); col += strlen(yytext);}
-"&"				{print_token("BITWISE_AND", &first_token); col += strlen(yytext);}
-"|"				{print_token("BITWISE_OR", &first_token); col += strlen(yytext);}
-"~"				{print_token("BITWISE_NOT", &first_token); col += strlen(yytext);}
-"^"				{print_token("BITWISE_XOR", &first_token); col += strlen(yytext);}
-"!"				{print_token("NOT", &first_token); col += strlen(yytext);}
-"&&"			{print_token("LOGICAL_AND", &first_token); col += strlen(yytext);}
-"||"			{print_token("LOGICAL_OR", &first_token); col += strlen(yytext);}
-"=="			{print_token("EQUAL", &first_token); col += strlen(yytext);}
-"!="			{print_token("NOT_EQUAL", &first_token); col += strlen(yytext);}
-"<"				{print_token("LESS_THAN", &first_token); col += strlen(yytext);}
-">"				{print_token("GREATER_THAN", &first_token); col += strlen(yytext);}
-"<="			{print_token("LESS_EQUAL", &first_token); col += strlen(yytext);}
-">="			{print_token("GREATER_EQUAL", &first_token); col += strlen(yytext);}
-">>"			{print_token("R_SHIFT", &first_token); col += strlen(yytext);}
-"<<"			{print_token("L_SHIFT", &first_token); col += strlen(yytext);}
-"="				{print_token("ASSIGN", &first_token); col += strlen(yytext);}
-"+="			{print_token("ADD_ASSIGN", &first_token); col += strlen(yytext);}
-"-="			{print_token("MINUS_ASSIGN", &first_token); col += strlen(yytext);}
-";"				{print_token("SEMICOLON", &first_token); col += strlen(yytext);}
-","				{print_token("COMMA", &first_token); col += strlen(yytext);}
-":"				{print_token("COLON", &first_token); col += strlen(yytext);}
-"("				{print_token("L_PAREN", &first_token); col += strlen(yytext);}
-")"				{print_token("R_PAREN", &first_token); col += strlen(yytext);}
-"{"				{print_token("L_CURLY_BRACKET", &first_token); col += strlen(yytext);}
-"}"				{print_token("R_CURLY_BRACKET", &first_token); col += strlen(yytext);}
-"["				{print_token("L_SQUARE_BRACKET", &first_token); col += strlen(yytext);}
-"]"				{print_token("R_SQUARE_BRACKET", &first_token); col += strlen(yytext);}
-"?"				{print_token("TERNARY_CONDITIONAL", &first_token); col += strlen(yytext);}
-"#"				{print_token("NUMBER_SIGN", &first_token); col += strlen(yytext);}
-"->"			{print_token("POINTER", &first_token); col += strlen(yytext);}
-"printf"		{print_token("PRINTF", &first_token); col += strlen(yytext);}
-"scanf"			{print_token("SCANF", &first_token); col += strlen(yytext);}
-"define"		{print_token("DEFINE", &first_token); col += strlen(yytext);}
-"exit"			{print_token("EXIT", &first_token); col += strlen(yytext);}
+"//"(.)*\n      {validToken();} 
+
+"void"          {validToken(); return VOID;}
+"int"           {validToken(); return INT;}
+"char"			{validToken(); return CHAR;}
+"return"		{validToken(); return RETURN;}
+"break"			{invalidToken();}
+"switch"		{invalidToken();}
+"case"			{invalidToken();}
+"default"		{invalidToken();}
+"while" 		{validToken(); return WHILE; }
+"do"			{validToken(); return DO;}
+"for"			{validToken(); return FOR;}
+"if"			{validToken(); return IF;}
+"typedef"		{invalidToken();}
+"struct"		{invalidToken();}
+"+"				{validToken(); return PLUS;}
+"-"				{validToken(); return MINUS;}
+"*"				{validToken(); return MULT;}
+"/"				{validToken(); return DIV;}
+"%"				{validToken(); return MOD;}
+"++"			{validToken(); return INC;}
+"--"			{validToken(); return DEC;}
+"&"				{validToken(); return BIT_AND;}
+"|"				{validToken(); return BIT_OR;}
+"~"				{validToken(); return BIT_NOT;}
+"^"				{validToken(); return BIT_XOR;}
+"!"				{validToken(); return NOT;}
+"&&"			{validToken(); return AND;}
+"||"			{validToken(); return OR;}
+"=="			{validToken(); return EQUAL;}
+"!="			{validToken(); return NOT_EQUAL;}
+"<"				{validToken(); return LESS;}
+">"				{validToken(); return GREATER;}
+"<="			{validToken(); return LESS_EQUAL;}
+">="			{validToken(); return GREATER_EQUAL;}
+">>"			{validToken(); return R_SHIFT;}
+"<<"			{validToken(); return L_SHIFT;}
+"="				{validToken(); return ASSIGN;}
+"+="			{validToken(); return ADD_ASSIGN;}
+"-="			{validToken(); return SUB_ASSIGN;}
+";"				{validToken(); return SEMICOLON;}
+","				{validToken(); return COMMA;}
+":"				{validToken(); return COLON;}
+"("				{validToken(); return L_PAREN;}
+")"				{validToken(); return R_PAREN;}
+"{"				{validToken(); return L_CURLY;}
+"}"				{validToken(); return R_CURLY;}
+"["				{validToken(); return L_SQUARE;}
+"]"				{validToken(); return R_SQUARE;}
+"?"				{validToken(); return TERNARY;}
+"#"				{validToken(); return NUMBER_SIGN;}
+"->"			{invalidToken();}
+"printf"		{validToken(); return PRINTF;}
+"scanf"			{validToken(); return SCANF;}
+"define"		{validToken(); return DEFINE;}
+"exit"			{validToken(); return EXIT;}
 
 
-"'"(\\.|[^\\']){1}"'"|"’"(\\.|[^\\']){1}"’"	{
-	if(!first_token)
-		printf("\n"); 
-	printf("CHARACTER(%.*s)", (int)(strlen(yytext) - 2), yytext + 1);
-	first_token = 0;
-	col += strlen(yytext);
-}
+"'"(\\.|[^\\']){1}"'"|"’"(\\.|[^\\']){1}"’"	{validToken(); return CHARACTER;}
 
-\"([^\\\"]|\\.)*\"	{
-	if(!first_token)
-		printf("\n");
-	printf("STRING(%.*s)", (int)(strlen(yytext) - 2), yytext + 1);
-	first_token = 0;
-	col += strlen(yytext);
-}
+\"([^\\\"]|\\.)*\"	{validToken(); return STRING;}
 
-" "		{ col++;}
-\n		{ col = 1;}
-\r 		{}
-\t 		{ col += 4;}
+" "		{ validToken();}
+\n		{ col = 1; if(sintax_error) return ERRO;}
 
 ("_"|[a-zA-Z])[a-zA-Z_0-9]*	{
-	if(first_token == 0)
-		printf("\n");
-	first_token = 0;
-	if(strlen(yytext) > 255)
+	if(strlen(yytext) > 255) {
+		if(first_token == 0)
+			printf("\n");
+		first_token = 0;
 		printf("error:lexical:%d:%d: identifier too long", yylineno, col);
-	else
-		printf("IDENTIFIER(%s)", yytext);
-	col += strlen(yytext);
+		exit(1);
+	}
+	validToken();
+	return ID;
 }
 
-"0"[1-7][0-7]*					{print_num("NUM_OCTAL", yytext, &first_token); col += strlen(yytext);}
-("0x"[0-9a-f]+|"0X"[0-9A-F]+)	{print_num("NUM_HEXA", yytext, &first_token); col += strlen(yytext);}
-[0-9]+							{print_num("NUM_INTEGER", yytext, &first_token); col += strlen(yytext);}
+"0"[1-7][0-7]*					{validToken(); return NUM_OCTAL;}
+("0x"[0-9a-f]+|"0X"[0-9A-F]+)	{validToken(); return NUM_HEXA;}
+[0-9]+							{validToken(); return NUM_INT;}
 
 . 	{
-	if(first_token = 1)
+	if(first_token)
 		printf("\n");
 	first_token = 0;
 	printf("error:lexical:%d:%d: %s", yylineno, col, yytext);
 	col += strlen(yytext);
+	exit(1);
 }
 
 %%
-
-int main(int argc, char *argv[]) {
-	yylex();
-	return 0;
-}
