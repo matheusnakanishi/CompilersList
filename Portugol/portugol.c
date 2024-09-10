@@ -61,6 +61,7 @@
 #define END 54
 #define STRING 55
 
+// Cabeçalho
 void START();
 void PROGRAMA();
 void BV();
@@ -98,7 +99,9 @@ void FATOR_PRIME();
 void VARIAVEL_PRIME();
 void EI_PRIME();
 void ES_PRIME();
+void DV();
 
+// Variáveis globais
 char *input;
 int token;
 char last_token[15];
@@ -110,32 +113,25 @@ int block_comment = 0;
 int error_col;
 char buffer[131072];
 int nova_linha = 0;
-    
-void prox_linha() {
-    fgets(buffer, sizeof(buffer), stdin);
-    input = buffer;
 
-    row++;
-    col = 0;
-}
-
-
+// Funções
 void erro(int flag) {
-    if(!first_print)
+    if (!first_print)
         printf("\n");
     first_print = 0;
 
-    if(flag)
+    if (flag == 1)
         printf("ERRO LEXICO. Linha: %d Coluna: %d -> '%s'", row, error_col, last_token);
-    else
+    else if (flag == 2)
         printf("ERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", row, error_col, last_token);
 
     exit(1);
 }
 
 int getToken() {
-
+    
     while(1) {
+        // Se uma quebra de linha for lida e nenhum token retornado, carrega do buffer a linha seguinte
         if (nova_linha) {
             row++;
             col = 0;
@@ -157,8 +153,8 @@ int getToken() {
                 if (*input == '\0')
                     erro(1);
                 
+                col += strlen(input);
                 input++;
-                col++;
             }
 
             block_comment = 0;
@@ -183,19 +179,22 @@ int getToken() {
             col++;
             error_col = col;
 
+            // Enquanto o comentário em bloco não for fechado, a leitura avança
             while (*input != '}') {
+                // Continuar na próxima linha
                 if (*input == '\n') {
                     nova_linha = 1;
                     continue;
                 }
-                //comentário em bloco não finalizado
+                // Erro de comentário em bloco não finalizado
                 if (*input == '\0')
                     erro(1);
                 
+                col += strlen(input);
                 input++;
-                col++;
             }
 
+            // Se não foi lido uma quebra de linha, então o comentário em bloco foi fechado
             if (!nova_linha)
                 block_comment = 0;
             
@@ -602,10 +601,11 @@ int getToken() {
                     last_token[input - start] = '\0';           
                     return NUM_REAL;
                 }
-                else
+                else{
                     strncpy(last_token, start, input - start);  
                     last_token[input - start] = '\0';
                     erro(1);
+                }
             }
             else if (*input == ' ' || *input == '\n' || *input == '\0') {
                 strncpy(last_token, start, input - start);  
@@ -640,18 +640,21 @@ int getToken() {
             return ID;
         }
 
-        if (*input == '\0' || *input == '\n') {
-            last_token[0] = '\0';
+        if (*input == '\n') {
+            nova_linha = 1;
+            continue;
         }
         
         // Armazena o input de erro
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
-        error_flag = 1;
+        //error_flag = 1;
         col++; 
         error_col = col;
+
+        // Token inválido
+        erro(1); 
     }
-    erro(1); // Token inválido
 }
 
 // Sintatico
@@ -664,7 +667,7 @@ void eat(int t) {
     if (token == t)
         advance();
     else    
-        printf("erro");
+        erro(2);
 }
 
 void START() {
@@ -684,7 +687,7 @@ void PROGRAMA() {
         BC();
     }
     else
-        printf("erro");
+        erro(2);
 }
 
 void PF() {
@@ -900,7 +903,7 @@ void COMANDOS() {
         EXPRESSAO();
         eat(ENTAO);
         LC();
-        C_PRIME2;
+        C_PRIME2();
     }
     else if (token == ENQUANTO) {
         eat(ENQUANTO);
@@ -1192,29 +1195,20 @@ void EI_PRIME() {
 int main() {
     char buffer[131072];
     
-    while (fgets(buffer, sizeof(buffer), stdin)) {
-        input = buffer;
-        error_flag = 0;
-        row++;
-        col = 0;
+    fgets(buffer, sizeof(buffer), stdin);
+    
+    input = buffer;
+    error_flag = 0;
+    row++;
+    col = 0;
 
-        token = getToken();
-        //printf("%d\n", token);
+    token = getToken();
+    START();
 
-        if (token == -1) {
-            if(!first_print)
-                printf("\n");
+    if(!first_print)
+        printf("\n");
 
-            first_print = 0;
-            printf("ERRO LEXICO. Linha: %d Coluna: %d -> '%s'", row, error_col, last_token);
-        }
-        
-        /*if (error_flag != 1){
-            if(!first_print)
-                printf("\n");
-            first_print = 0;
-        }*/
-    }
+    printf("PROGRAMA CORRETO");
     
     return 0;
 }
