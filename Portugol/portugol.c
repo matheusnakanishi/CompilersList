@@ -76,6 +76,7 @@ void DS();
 void DS_PRIME();
 void DT();
 void VM();
+void DF();
 void DIMENSAO();   
 void DI_PRIME();
 void DIMENSAO_PRIME();
@@ -123,14 +124,15 @@ void erro(int flag) {
     if (flag == 1)
         printf("ERRO LEXICO. Linha: %d Coluna: %d -> '%s'", row, error_col, last_token);
     else if (flag == 2)
-        printf("ERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", row, error_col, last_token);
+        printf("ERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", row, col, last_token);
 
     exit(1);
 }
 
 int getToken() {
-    
+    //printf("\nGet Token");
     while(1) {
+
         // Se uma quebra de linha for lida e nenhum token retornado, carrega do buffer a linha seguinte
         if (nova_linha) {
             row++;
@@ -139,15 +141,15 @@ int getToken() {
             input = buffer;
             nova_linha = 0;
         }
-        
+        //printf("\n%s", input);
         // Continuação de comentário em bloco em outra linha
         if (block_comment) {
-
+            //printf("\nContinuação de comentário em bloco");
             while (*input != '}') {
-
+                
                 if (*input == '\n') {
                     nova_linha = 1;
-                    continue;
+                    break;
                 }
 
                 if (*input == '\0')
@@ -156,8 +158,11 @@ int getToken() {
                 col += strlen(input);
                 input++;
             }
-
+            if (nova_linha)
+                continue;
+            
             block_comment = 0;
+            input++;
         }
 
         // Ignora espaços em branco
@@ -168,23 +173,25 @@ int getToken() {
 
         // Comentário de uma linha
         if (strncmp(input, "//", 2) == 0) {
+            //printf("\nComentário linha única");
             nova_linha = 1;
             continue;
         }
-
+    
         // Comentário em bloco
         if (*input == '{') {
+        
             block_comment = 1;
             input++;
             col++;
             error_col = col;
-
+            
             // Enquanto o comentário em bloco não for fechado, a leitura avança
             while (*input != '}') {
                 // Continuar na próxima linha
                 if (*input == '\n') {
                     nova_linha = 1;
-                    continue;
+                    break;
                 }
                 // Erro de comentário em bloco não finalizado
                 if (*input == '\0')
@@ -195,8 +202,10 @@ int getToken() {
             }
 
             // Se não foi lido uma quebra de linha, então o comentário em bloco foi fechado
-            if (!nova_linha)
+            if (!nova_linha) {
                 block_comment = 0;
+                input++;
+            }
             
             continue;
         }
@@ -419,7 +428,7 @@ int getToken() {
             last_token[1] = '\0';
             input++;
             col++;
-            return END;
+            return PONTO;
         }
         if (*input == ';') {
             strncpy(last_token, input, 1);
@@ -641,8 +650,13 @@ int getToken() {
         }
 
         if (*input == '\n') {
+            //printf("\nql");
             nova_linha = 1;
             continue;
+        }
+
+        if (*input == '\0') {
+            return END;
         }
         
         // Armazena o input de erro
@@ -664,10 +678,14 @@ void advance() {
 }
 
 void eat(int t) {
+    //printf("\n%d", token);
     if (token == t)
         advance();
-    else    
+    else {
+        printf("\n%d - %d",token, t);
+        printf("\nErro eat\n");
         erro(2);
+    }
 }
 
 void START() {
@@ -685,8 +703,9 @@ void PROGRAMA() {
         BV();
         PF();
         BC();
+        eat(PONTO);
     }
-    else
+    else if (token != END)
         erro(2);
 }
 
@@ -696,11 +715,14 @@ void PF() {
         PF();
     }
     else if (token == FUNCAO) {
+        DF();
         PF();
     }
     else if (token == INICIO) {
         return;
     }
+    else
+        erro(2);
 }
 
 void DPROC() {
@@ -712,7 +734,10 @@ void DPROC() {
         DPARAM();
         BV();
         BC();
+        eat(PONTO_VIRG);
     }
+    else
+        erro(2);
 }
 
 void DF() {
@@ -728,10 +753,12 @@ void DF() {
         BC();
         eat(PONTO_VIRG);
     }
+    else
+        erro(2);
 }
 
 void PARAMETROS() {
-    if (token == DOIS_PONTOS || token) {
+    if (token == DOIS_PONTOS || token == PONTO_VIRG) {
         return;
     }
     else if (token == ABRE_PAREN) {
@@ -739,6 +766,8 @@ void PARAMETROS() {
         DI();
         eat(FECHA_PAREN);
     }
+    else
+        erro(2);
 
 }
 
@@ -749,7 +778,8 @@ void DPARAM() {
     else if (token == PROCEDIMENTO || token == FUNCAO || token == VARIAVEIS || token == INICIO) {
         return;
     }
-
+    else
+        erro(2);
 }
 
 void BV() {
@@ -760,6 +790,8 @@ void BV() {
         eat(VARIAVEIS);
         DS();
     }
+    else
+        erro(2);
 }
 
 void DS() {
@@ -771,6 +803,8 @@ void DS() {
         DT();
         DS_PRIME();
     }
+    else
+        erro(2);
 }
 
 void DS_PRIME() {
@@ -780,6 +814,8 @@ void DS_PRIME() {
     else if (token == ID || token == TIPO || token == INTEIRO || token == REAL || token == CARACTERE || token == LOGICO) {
         DS();
     }
+    else
+        erro(2);
 }
 
 void DT() {
@@ -794,6 +830,8 @@ void DT() {
         TB();
         eat(PONTO_VIRG);
     }
+    else
+        erro(2);
 }
 
 void DV() {
@@ -803,6 +841,8 @@ void DV() {
         DI();
         eat(PONTO_VIRG);
     }
+    else
+        erro(2);
 }
 
 void DI() {
@@ -810,6 +850,8 @@ void DI() {
         eat(ID);
         DI_PRIME();
     }
+    else
+        erro(2);
 }
 
 void DI_PRIME() {
@@ -820,6 +862,8 @@ void DI_PRIME() {
         eat(VIRGULA);
         DI();
     }
+    else
+        erro(2);
 }
 
 void VM() {
@@ -829,6 +873,8 @@ void VM() {
     else if (token == MATRIZ) {
         eat(MATRIZ);
     }
+    else
+        erro(2);
 }
 
 void DIMENSAO() {
@@ -838,6 +884,8 @@ void DIMENSAO() {
         eat(NUM_INT);
         DIMENSAO_PRIME();
     }
+    else
+        erro(2);
 }
 
 void DIMENSAO_PRIME() {
@@ -848,6 +896,8 @@ void DIMENSAO_PRIME() {
         eat(VIRGULA);
         DIMENSAO();
     }
+    else
+        erro(2);
 }
 
 void TB() {
@@ -866,6 +916,8 @@ void TB() {
     else if (token == LOGICO) {
         eat(LOGICO);
     }
+    else
+        erro(2);
 }
 
 void BC() {
@@ -874,6 +926,8 @@ void BC() {
         LC();
         eat(FIM);
     }
+    else
+        erro(2);
 }
 
 void LC() {
@@ -882,6 +936,8 @@ void LC() {
         eat(PONTO_VIRG);
         LC_PRIME();
     }
+    else
+        erro(2);
 }
 
 void LC_PRIME() {
@@ -891,6 +947,8 @@ void LC_PRIME() {
     else if (token == FIM || token == SENAO || token == ATE) {
         return;
     }
+    else
+        erro(2);
 }
 
 void COMANDOS() {
@@ -942,6 +1000,8 @@ void COMANDOS() {
         EI();
         eat(FECHA_PAREN);
     }
+    else
+        erro(2);
 }
 
 void C_PRIME1() {
@@ -964,6 +1024,8 @@ void C_PRIME1() {
         eat(ATRIBUICAO);
         EXPRESSAO();
     }
+    else
+        erro(2);
 }
 
 void C_PRIME2() {
@@ -977,6 +1039,8 @@ void C_PRIME2() {
         eat(FIM);
         eat(SE);
     }
+    else
+        erro(2);
 }
 
 void C_PRIME3() {
@@ -994,7 +1058,8 @@ void C_PRIME3() {
         eat(FIM);
         eat(PARA);
     }
-    
+    else
+        erro(2);
 }
 
 void EXPRESSAO() {
@@ -1002,6 +1067,8 @@ void EXPRESSAO() {
         ES();
         EXPRESSAO_PRIME();
     }
+    else
+        erro(2);
 }
 
 void EXPRESSAO_PRIME() {
@@ -1013,6 +1080,8 @@ void EXPRESSAO_PRIME() {
         ES();
         EXPRESSAO_PRIME();
     }
+    else
+        erro(2);
 }
 
 void ES() {
@@ -1025,6 +1094,8 @@ void ES() {
         TERMO();
         ES_PRIME();
     }
+    else
+        erro(2);
 }
 
 void ES_PRIME() {
@@ -1042,6 +1113,8 @@ void ES_PRIME() {
         TERMO();
         ES_PRIME();
     }
+    else
+        erro(2);
 }
 
 void OPR() {
@@ -1063,6 +1136,8 @@ void OPR() {
     else if (token == MAIOR_IGUAL) {
         eat(MAIOR_IGUAL);
     }
+    else
+        erro(2);
 }
 
 void OPB() {
@@ -1072,6 +1147,8 @@ void OPB() {
     else if (token == MENOS) {
         eat(MENOS);
     }
+    else
+        erro(2);
 }
 
 void TERMO() {
@@ -1079,6 +1156,8 @@ void TERMO() {
         FATOR();
         TERMO_PRIME();
     }
+    else
+        erro(2);
 }
 
 void TERMO_PRIME() {
@@ -1106,6 +1185,8 @@ void TERMO_PRIME() {
         FATOR();
         TERMO_PRIME();
     }
+    else
+        erro(2);
 }
 
 void FATOR() {
@@ -1137,6 +1218,8 @@ void FATOR() {
     else if (token == STRING) {
         eat(STRING);
     }
+    else
+        erro(2);
 }
 
 void FATOR_PRIME() {
@@ -1155,6 +1238,8 @@ void FATOR_PRIME() {
         EI();
         eat(FECHA_COLCH);
     }
+    else
+        erro(2);
 }
 
 void VARIAVEL() {
@@ -1162,6 +1247,8 @@ void VARIAVEL() {
         eat(ID);
         VARIAVEL_PRIME();
     }
+    else
+        erro(2);
 }
 
 void VARIAVEL_PRIME() {
@@ -1173,6 +1260,8 @@ void VARIAVEL_PRIME() {
         EI();
         eat(FECHA_COLCH);
     }
+    else
+        erro(2);
 }
 
 void EI() {
@@ -1180,6 +1269,8 @@ void EI() {
         EXPRESSAO();
         EI_PRIME();
     }
+    else
+        erro(2);
 }
 
 void EI_PRIME() {
@@ -1190,6 +1281,8 @@ void EI_PRIME() {
         eat(VIRGULA);
         EI();
     }
+    else
+        erro(2);
 }
 
 int main() {
@@ -1203,6 +1296,7 @@ int main() {
     col = 0;
 
     token = getToken();
+    //printf("\ntoken encontrado");
     START();
 
     if(!first_print)

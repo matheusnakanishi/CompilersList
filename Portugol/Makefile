@@ -8,5 +8,5 @@ $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)
 
 # Regra para limpar arquivos compilados
-clean:
+clear:
 	rm -f $(TARGET)
