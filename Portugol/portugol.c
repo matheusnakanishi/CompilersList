@@ -124,27 +124,28 @@ void erro(int flag) {
     if (flag == 1)
         printf("ERRO LEXICO. Linha: %d Coluna: %d -> '%s'", row, error_col, last_token);
     else if (flag == 2)
-        printf("ERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", row, col, last_token);
+        printf("ERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", row, error_col, last_token);
 
     exit(1);
 }
 
 int getToken() {
-    //printf("\nGet Token");
     while(1) {
 
         // Se uma quebra de linha for lida e nenhum token retornado, carrega do buffer a linha seguinte
         if (nova_linha) {
             row++;
-            col = 0;
-            fgets(buffer, sizeof(buffer), stdin);
+            col = 1;
+
+            if (fgets(buffer, sizeof(buffer), stdin) == NULL)
+                return END;
+            
             input = buffer;
             nova_linha = 0;
         }
-        //printf("\n%s", input);
+
         // Continuação de comentário em bloco em outra linha
         if (block_comment) {
-            //printf("\nContinuação de comentário em bloco");
             while (*input != '}') {
                 
                 if (*input == '\n') {
@@ -155,7 +156,7 @@ int getToken() {
                 if (*input == '\0')
                     erro(1);
                 
-                col += strlen(input);
+                col++;
                 input++;
             }
             if (nova_linha)
@@ -173,14 +174,12 @@ int getToken() {
 
         // Comentário de uma linha
         if (strncmp(input, "//", 2) == 0) {
-            //printf("\nComentário linha única");
             nova_linha = 1;
             continue;
         }
     
         // Comentário em bloco
         if (*input == '{') {
-        
             block_comment = 1;
             input++;
             col++;
@@ -197,7 +196,7 @@ int getToken() {
                 if (*input == '\0')
                     erro(1);
                 
-                col += strlen(input);
+                col++;
                 input++;
             }
 
@@ -205,12 +204,20 @@ int getToken() {
             if (!nova_linha) {
                 block_comment = 0;
                 input++;
+                col++;
             }
             
             continue;
         }
-
+        error_col = col;
         // Palavras reservadas
+        if (strncasecmp(input, "repita", 6) == 0 && !isalnum(input[6])) {
+            strncpy(last_token, input, 6);
+            last_token[6] = '\0';
+            input += 6;
+            col += 6;
+            return REPITA;
+        }
         if (strncasecmp(input, "algoritmo", 9) == 0 && !isalnum(input[9])) {
             strncpy(last_token, input, 9);
             last_token[9] = '\0';
@@ -267,14 +274,14 @@ int getToken() {
             col += 6;
             return LOGICO;
         }
-        if (strncasecmp(input, "vetor", 5) == 0 && !isalnum(input[5])) {
+        if (strncasecmp(input, "vetor", 5) == 0 && input[5] == '[') {
             strncpy(last_token, input, 5);
             last_token[5] = '\0';
             input += 5;
             col += 5;
             return VETOR;
         }
-        if (strncasecmp(input, "matriz", 6) == 0 && !isalnum(input[6])) {
+        if (strncasecmp(input, "matriz", 6) == 0 && input[6] == '[') {
             strncpy(last_token, input, 6);
             last_token[6] = '\0';
             input += 6;
@@ -493,26 +500,12 @@ int getToken() {
             col++;
             return IGUAL;
         }
-        if (*input == '>') {
-            strncpy(last_token, input, 1);
-            last_token[1] = '\0';
-            input++;
-            col++;
-            return MAIOR;
-        }
-        if (*input == '<') {
-            strncpy(last_token, input, 1);
-            last_token[1] = '\0';
-            input++;
-            col++;
-            return MENOR;
-        }
         if (*input == '+') {
             strncpy(last_token, input, 1);
             last_token[1] = '\0';
             input++;
             col++;
-            return MAIOR;
+            return MAIS;
         }
         if (*input == '-') {
             strncpy(last_token, input, 1);
@@ -535,48 +528,67 @@ int getToken() {
             col++;
             return DIVISAO;
         }
-        if (strncmp(input, "<>", 2) == 0 && !isalnum(input[2])) {
+        if (strncmp(input, "<>", 2) == 0) {
             strncpy(last_token, input, 2);
             last_token[2] = '\0';
             input += 2;
             col += 2;
             return DIFERENTE;
         }
-        if (strncmp(input, ">=", 2) == 0 && !isalnum(input[2])) {
+        if (strncmp(input, ">=", 2) == 0) {
             strncpy(last_token, input, 2);
             last_token[2] = '\0';
             input += 2;
             col += 2;
             return MAIOR_IGUAL;
         }
-        if (strncmp(input, "<=", 2) == 0 && !isalnum(input[2])) {
+        if (strncmp(input, "<=", 2) == 0) {
             strncpy(last_token, input, 2);
             last_token[2] = '\0';
             input += 2;
             col += 2;
             return MENOR_IGUAL;
         }
-        if (strncmp(input, "<-", 2) == 0 && !isalnum(input[2])) {
+        if (strncmp(input, "<-", 2) == 0) {
             strncpy(last_token, input, 2);
             last_token[2] = '\0';
             input += 2;
             col += 2;
             return ATRIBUICAO;
         }
-
-        //String
-        if (*input == '"') {
+        if (*input == '>') {
+            strncpy(last_token, input, 1);
+            last_token[1] = '\0';
             input++;
             col++;
+            return MAIOR;
+        }
+        if (*input == '<') {
+            strncpy(last_token, input, 1);
+            last_token[1] = '\0';
+            input++;
+            col++;
+            return MENOR;
+        }
+        //String
+        if (*input == '"') {
+            char *start = input;
+            input++;
             error_col = col;
+            col++;
 
             while (*input != '"') {
-                if (*input == '\n' || *input == '\0') 
+                if (*input == '\n' || *input == '\0') {
+                    strncpy(last_token, start, input - start);  
+                    last_token[input - start] = '\0';
                     erro(1);
-                
+                }
                 input++;
                 col++;
             }
+            strncpy(last_token, start, input - start);  
+            last_token[input - start] = '\0';
+            input++;
             
             return STRING;
         }
@@ -585,8 +597,8 @@ int getToken() {
         if (isdigit(*input)) {
             char *start = input;
             input++;
-            col++;
             error_col = col;
+            col++;
 
             while (isdigit(*input)) {
                 input++;
@@ -616,19 +628,10 @@ int getToken() {
                     erro(1);
                 }
             }
-            else if (*input == ' ' || *input == '\n' || *input == '\0') {
+            else {
                 strncpy(last_token, start, input - start);  
                 last_token[input - start] = '\0';           
                 return NUM_INT;
-            }
-            else { 
-                while (*input != ' ' && *input && '\n' && *input != '\0') {
-                    input++;
-                    col++;
-                }
-                strncpy(last_token, start, input - start);  
-                last_token[input - start] = '\0';
-                erro(1);
             }
         }
 
@@ -636,8 +639,8 @@ int getToken() {
         if (isalpha(*input) || *input == '_') {
             char *start = input;
             input++;
-            col++;
             error_col = col;
+            col++;
 
             while(isalnum(*input) || *input == '_') {
                 col++;
@@ -650,20 +653,16 @@ int getToken() {
         }
 
         if (*input == '\n') {
-            //printf("\nql");
             nova_linha = 1;
             continue;
         }
 
-        if (*input == '\0') {
+        if (*input == '\0')
             return END;
-        }
         
         // Armazena o input de erro
         strncpy(last_token, input, 1);
         last_token[1] = '\0';
-        //error_flag = 1;
-        col++; 
         error_col = col;
 
         // Token inválido
@@ -675,17 +674,15 @@ int getToken() {
 
 void advance() {
     token = getToken();
+    if (token == END)
+        return;
 }
 
 void eat(int t) {
-    //printf("\n%d", token);
     if (token == t)
         advance();
-    else {
-        printf("\n%d - %d",token, t);
-        printf("\nErro eat\n");
+    else
         erro(2);
-    }
 }
 
 void START() {
@@ -693,6 +690,8 @@ void START() {
         PROGRAMA();
         eat(END);
     }
+    else
+        erro(2);
 }
 
 void PROGRAMA() {
@@ -718,9 +717,8 @@ void PF() {
         DF();
         PF();
     }
-    else if (token == INICIO) {
+    else if (token == INICIO)
         return;
-    }
     else
         erro(2);
 }
@@ -758,9 +756,8 @@ void DF() {
 }
 
 void PARAMETROS() {
-    if (token == DOIS_PONTOS || token == PONTO_VIRG) {
+    if (token == DOIS_PONTOS || token == PONTO_VIRG)
         return;
-    }
     else if (token == ABRE_PAREN) {
         eat(ABRE_PAREN);
         DI();
@@ -772,20 +769,18 @@ void PARAMETROS() {
 }
 
 void DPARAM() {
-    if (token == ID || token == TIPO || token == INTEIRO || token == REAL || token == CARACTERE || token == LOGICO) {
+    if (token == ID || token == TIPO || token == INTEIRO 
+    || token == REAL || token == CARACTERE || token == LOGICO)
         DS();
-    }
-    else if (token == PROCEDIMENTO || token == FUNCAO || token == VARIAVEIS || token == INICIO) {
+    else if (token == PROCEDIMENTO || token == FUNCAO || token == VARIAVEIS || token == INICIO)
         return;
-    }
     else
         erro(2);
 }
 
 void BV() {
-    if (token == END || token == PROCEDIMENTO || token == FUNCAO || token == INICIO) {
+    if (token == END || token == PROCEDIMENTO || token == FUNCAO || token == INICIO)
         return;
-    }
     if (token == VARIAVEIS) {
         eat(VARIAVEIS);
         DS();
@@ -808,12 +803,11 @@ void DS() {
 }
 
 void DS_PRIME() {
-    if (token == END || token == PROCEDIMENTO || token == FUNCAO || token == VARIAVEIS || token == INICIO) {
+    if (token == END || token == PROCEDIMENTO || token == FUNCAO || token == VARIAVEIS || token == INICIO)
         return;
-    }
-    else if (token == ID || token == TIPO || token == INTEIRO || token == REAL || token == CARACTERE || token == LOGICO) {
+    else if (token == ID || token == TIPO || token == INTEIRO 
+    || token == REAL || token == CARACTERE || token == LOGICO)
         DS();
-    }
     else
         erro(2);
 }
@@ -855,9 +849,8 @@ void DI() {
 }
 
 void DI_PRIME() {
-    if (token == PONTO_VIRG || token == FECHA_PAREN) {
+    if (token == PONTO_VIRG || token == FECHA_PAREN)
         return;
-    }
     else if (token == VIRGULA) {
         eat(VIRGULA);
         DI();
@@ -867,12 +860,10 @@ void DI_PRIME() {
 }
 
 void VM() {
-    if (token == VETOR) {
+    if (token == VETOR)
         eat(VETOR);
-    }
-    else if (token == MATRIZ) {
+    else if (token == MATRIZ)
         eat(MATRIZ);
-    }
     else
         erro(2);
 }
@@ -889,9 +880,8 @@ void DIMENSAO() {
 }
 
 void DIMENSAO_PRIME() {
-    if (token == FECHA_COLCH) {
+    if (token == FECHA_COLCH)
         return;
-    }
     else if (token == VIRGULA) {
         eat(VIRGULA);
         DIMENSAO();
@@ -901,21 +891,16 @@ void DIMENSAO_PRIME() {
 }
 
 void TB() {
-    if (token == ID) {
+    if (token == ID)
         eat(ID);
-    }
-    else if (token == INTEIRO) {
+    else if (token == INTEIRO)
         eat(INTEIRO);
-    }
-    else if (token == REAL) {
+    else if (token == REAL)
         eat(REAL);
-    }
-    else if (token == CARACTERE) {
+    else if (token == CARACTERE)
         eat(CARACTERE);
-    }
-    else if (token == LOGICO) {
+    else if (token == LOGICO)
         eat(LOGICO);
-    }
     else
         erro(2);
 }
@@ -941,12 +926,11 @@ void LC() {
 }
 
 void LC_PRIME() {
-    if (token == ID || token == SE || token == ENQUANTO || token == PARA || token == REPITA || token == LEIA || token == IMPRIMA) {
+    if (token == ID || token == SE || token == ENQUANTO || token == PARA 
+    || token == REPITA || token == LEIA || token == IMPRIMA)
         LC();
-    }
-    else if (token == FIM || token == SENAO || token == ATE) {
+    else if (token == FIM || token == SENAO || token == ATE)
         return;
-    }
     else
         erro(2);
 }
@@ -978,8 +962,6 @@ void COMANDOS() {
         EXPRESSAO();
         eat(ATE);
         EXPRESSAO();
-        eat(ATE);
-        EXPRESSAO();
         C_PRIME3();
     }
     else if (token == REPITA) {
@@ -1005,9 +987,8 @@ void COMANDOS() {
 }
 
 void C_PRIME1() {
-    if (token == PONTO_VIRG) {
+    if (token == PONTO_VIRG)
         return;
-    }
     else if (token == ABRE_PAREN) {
         eat(ABRE_PAREN);
         EI();
@@ -1033,7 +1014,7 @@ void C_PRIME2() {
         eat(FIM);
         eat(SE);
     }
-    if (token == SENAO) {
+    else if (token == SENAO) {
         eat(SENAO);
         LC();
         eat(FIM);
@@ -1072,9 +1053,9 @@ void EXPRESSAO() {
 }
 
 void EXPRESSAO_PRIME() {
-    if (token == PONTO_VIRG || token == FECHA_PAREN || token == FECHA_COLCH || token == VIRGULA || token == ENTAO || token == FACA || token == ATE || token == PASSO) {
+    if (token == PONTO_VIRG || token == FECHA_PAREN || token == FECHA_COLCH || token == VIRGULA 
+    || token == ENTAO || token == FACA || token == ATE || token == PASSO) 
         return;
-    }
     else if (token == IGUAL || token == DIFERENTE || token == MENOR || token == MAIOR || token == MENOR_IGUAL || token == MAIOR_IGUAL) {
         OPR();
         ES();
@@ -1100,9 +1081,8 @@ void ES() {
 
 void ES_PRIME() {
     if (token == PONTO_VIRG || token == FECHA_PAREN || token == IGUAL || token == FECHA_COLCH || token == VIRGULA || token == ENTAO || token == FACA || token == ATE || token == PASSO || token == DIFERENTE || token == MENOR
-        || token == MAIOR || token == MENOR_IGUAL || token == MAIOR_IGUAL) {
+        || token == MAIOR || token == MENOR_IGUAL || token == MAIOR_IGUAL)
         return;
-    }
     else if (token == OU) {
         eat(OU);
         TERMO();
@@ -1118,41 +1098,34 @@ void ES_PRIME() {
 }
 
 void OPR() {
-    if (token == IGUAL) {
+    if (token == IGUAL)
         eat(IGUAL);
-    }
-    else if (token == DIFERENTE) {
+    else if (token == DIFERENTE)
         eat(DIFERENTE);
-    }
-    else if (token == MENOR) {
+    else if (token == MENOR)
         eat(MENOR);
-    }
-    else if (token == MAIOR) {
+    else if (token == MAIOR)
         eat(MAIOR);
-    }
-    else if (token == MENOR_IGUAL) {
+    else if (token == MENOR_IGUAL)
         eat(MENOR_IGUAL);
-    }
-    else if (token == MAIOR_IGUAL) {
+    else if (token == MAIOR_IGUAL)
         eat(MAIOR_IGUAL);
-    }
     else
         erro(2);
 }
 
 void OPB() {
-    if (token == MAIS) {
+    if (token == MAIS)
         eat(MAIS);
-    }
-    else if (token == MENOS) {
+    else if (token == MENOS)
         eat(MENOS);
-    }
     else
         erro(2);
 }
 
 void TERMO() {
-    if (token == ID || token == ABRE_PAREN || token == NUM_INT || token == NAO || token == NUM_REAL || token == VERDADEIRO || token == FALSO || token == STRING) {
+    if (token == ID || token == ABRE_PAREN || token == NUM_INT || token == NAO 
+    || token == NUM_REAL || token == VERDADEIRO || token == FALSO || token == STRING) {
         FATOR();
         TERMO_PRIME();
     }
@@ -1162,9 +1135,8 @@ void TERMO() {
 
 void TERMO_PRIME() {
     if (token == PONTO_VIRG || token == FECHA_PAREN || token == IGUAL || token == FECHA_COLCH || token == VIRGULA || token == ENTAO || token == FACA || token == ATE || token == PASSO || token == OU || token == DIFERENTE
-        || token == MENOR || token == MAIOR || token == MENOR_IGUAL || token == MAIOR_IGUAL || token == MAIS || token == MENOS) {
+        || token == MENOR || token == MAIOR || token == MENOR_IGUAL || token == MAIOR_IGUAL || token == MAIS || token == MENOS)
         return;
-    }
     else if (token == VEZES) {
         eat(VEZES);
         FATOR();
@@ -1199,25 +1171,20 @@ void FATOR() {
         EXPRESSAO();
         eat(FECHA_PAREN);
     }
-    else if (token == NUM_INT) {
+    else if (token == NUM_INT)
         eat(NUM_INT);
-    }
     else if (token == NAO) {
         eat(NAO);
         FATOR();
     }
-    else if (token == NUM_REAL) {
+    else if (token == NUM_REAL)
         eat(NUM_REAL);
-    }
-    else if (token == VERDADEIRO) {
+    else if (token == VERDADEIRO)
         eat(VERDADEIRO);
-    }
-    else if (token == FALSO) {
+    else if (token == FALSO)
         eat(FALSO);
-    }
-    else if (token == STRING) {
+    else if (token == STRING)
         eat(STRING);
-    }
     else
         erro(2);
 }
@@ -1225,9 +1192,8 @@ void FATOR() {
 void FATOR_PRIME() {
     if (token == PONTO_VIRG || token == FECHA_PAREN || token == IGUAL || token == FECHA_COLCH || token == VIRGULA || token == ENTAO || token == FACA || token == ATE || token == PASSO
         || token == OU || token == DIFERENTE || token == MENOR || token == MAIOR || token == MENOR_IGUAL || token == MAIOR_IGUAL || token == MAIS || token == MENOS || token == VEZES
-        || token == DIVISAO || token == DIV || token == E) {
+        || token == DIVISAO || token == DIV || token == E)
         return;
-    }
     else if (token == ABRE_PAREN) {
         eat(ABRE_PAREN);
         EI();
@@ -1252,9 +1218,8 @@ void VARIAVEL() {
 }
 
 void VARIAVEL_PRIME() {
-    if (token == FECHA_PAREN) {
+    if (token == FECHA_PAREN)
         return;
-    }
     else if (token == ABRE_COLCH) {
         eat(ABRE_COLCH);
         EI();
@@ -1274,9 +1239,8 @@ void EI() {
 }
 
 void EI_PRIME() {
-    if (token == FECHA_PAREN || token == FECHA_COLCH) {
+    if (token == FECHA_PAREN || token == FECHA_COLCH)
         return;
-    }
     else if (token == VIRGULA) {
         eat(VIRGULA);
         EI();
@@ -1284,6 +1248,7 @@ void EI_PRIME() {
     else
         erro(2);
 }
+
 
 int main() {
     char buffer[131072];
@@ -1296,17 +1261,12 @@ int main() {
     col = 0;
 
     token = getToken();
-    //printf("\ntoken encontrado");
     START();
 
     if(!first_print)
         printf("\n");
 
-    printf("PROGRAMA CORRETO");
+    printf("PROGRAMA CORRETO.");
     
     return 0;
 }
-
-// Tirar while
-// Quando encontrar \n chamar fgets input = buffer e getToken()
-// Reconhecer String
